@@ -26,7 +26,7 @@ contract PeachV03 is
     // For converting from the decimal to the hexadecimal number system.
     bytes16 private constant _HEX_SYMBOLS = "0123456789ABCDEF";
 
-    uint private constant _mintPrice = 0.001 ether;
+    uint private constant _MINTPRICE = 0.001 ether;
 
     // Emits when the stored value changes
     // event ValueChanged(uint256 newValue);
@@ -99,8 +99,31 @@ contract PeachV03 is
     }
 
     modifier onlyIfSufficientFunds(uint tokenId) {
-        if (tokenId == 3 || tokenId == 4) {
-            require(msg.value >= _mintPrice, "Insufficient payment.");
+        if (tokenId == 0 || tokenId == 16777215) {
+            // extra premium pricing for: black, white
+            require(
+                msg.value >= (3 * _MINTPRICE),
+                "Insufficient payment for an extra premium color."
+            ); // should be 10000 * _MINTPRICE
+        } else if (
+            tokenId == 255 ||
+            tokenId == 65280 ||
+            tokenId == 16711680 ||
+            tokenId == 65535 ||
+            tokenId == 16711935 ||
+            tokenId == 16776960
+        ) {
+            // premium pricing for: blue, green, red, cyan, magenta, yellow
+            require(
+                msg.value >= (2 * _MINTPRICE),
+                "Insufficient payment for a premium color."
+            ); // should be 1000 * _MINTPRICE
+        } else {
+            // regular pricing for: the rest of the Web Colors
+            require(
+                msg.value >= _MINTPRICE,
+                "Insufficient payment for a regular color."
+            ); // should be _MINTPRICE
         }
         _;
     }
