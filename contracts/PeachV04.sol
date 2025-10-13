@@ -28,8 +28,15 @@ contract PeachV04 is
 
     uint private constant _MINTPRICE = 0.001 ether;
 
-    // Emits when the stored value changes
-    // event ValueChanged(uint256 newValue);
+    event Rename(
+        string indexed oldName,
+        string indexed newName,
+        uint indexed tokenId
+    );
+
+    event UpgradeabilityEnded(address upgradeabilityEnder);
+
+    event Withdrew(uint amount);
 
     /**
      * @notice Initializes the contract.
@@ -54,6 +61,8 @@ contract PeachV04 is
                 )
             )
             .value = true;
+
+        emit UpgradeabilityEnded(msg.sender);
     }
 
     function upgradeabilityEnded() public view returns (bool) {
@@ -129,7 +138,10 @@ contract PeachV04 is
     }
 
     function withdraw() public onlyOwner {
-        payable(owner()).transfer(address(this).balance);
+        // gotta put the checks-effects-interactions pattern in here
+        uint balanceOfThisContract = address(this).balance;
+        payable(owner()).transfer(balanceOfThisContract);
+        emit Withdrew(balanceOfThisContract);
     }
 
     /**
@@ -144,7 +156,8 @@ contract PeachV04 is
 
     function _nixToken(uint tokenId) private onlyOwnerOf(tokenId) {
         _burn(tokenId); // destroys token (burn function doesn't check for owner-approval, so modifier does, also ensuring existence)
-        _names[tokenId] = ""; // de-names token
+        _modName(tokenId, ""); // de-names token
+        // _names[tokenId] = ""; // de-names token
     }
 
     /**
@@ -187,12 +200,11 @@ contract PeachV04 is
         string memory colorhex
     ) public view returns (string memory) {
         uint tokenId = validateColorhexAndGetId(colorhex); // gets tokenId
+        require(_getOwner(tokenId) != address(0), "token doesn't exist"); // token exists
         return _getName(tokenId);
     }
 
-    function _getName(
-        uint tokenId
-    ) private view onlyExistentToken(tokenId) returns (string memory) {
+    function _getName(uint tokenId) private view returns (string memory) {
         return _names[tokenId]; // gets token's name
     }
 
@@ -211,7 +223,9 @@ contract PeachV04 is
         uint tokenId,
         string memory newName
     ) private onlyOwnerOf(tokenId) onlyValidName(newName) {
+        string memory oldName = _getName(tokenId);
         _names[tokenId] = newName; // rename token (first ensures token is owned, which also ensures that it exists)
+        emit Rename(oldName, newName, tokenId);
     }
 
     /**
