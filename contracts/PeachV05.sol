@@ -14,7 +14,7 @@ import {StorageSlot} from "@openzeppelin/contracts/utils/StorageSlot.sol";
  * @notice Own and name a color. 1 NFT color swatch for each of 16M+ web colors.
  * @dev All on-chain: this NFT is a deed of ownership, but for a digital asset that is contained within the NFT.
  */
-contract PeachV04 is
+contract PeachV05 is
     Initializable,
     ERC721Upgradeable,
     OwnableUpgradeable,
