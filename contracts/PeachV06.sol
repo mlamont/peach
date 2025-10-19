@@ -142,6 +142,12 @@ contract PeachV06 is
         uint balanceOfThisContract = address(this).balance;
         payable(owner()).transfer(balanceOfThisContract);
         emit Withdrew(balanceOfThisContract);
+        // do something like this in a withdraw() function:
+        // uint amount = pendingWithdrawals[msg.sender];
+        //         // Remember to zero the pending refund before
+        //         // sending to prevent reentrancy attacks
+        //         pendingWithdrawals[msg.sender] = 0;
+        //         payable(msg.sender).transfer(amount);
     }
 
     /**
