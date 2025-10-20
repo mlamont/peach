@@ -105,6 +105,7 @@ contract PeachV06 is
     ) private onlyIfSufficientFunds(tokenId) {
         _safeMint(msg.sender, tokenId); // creates token (first ensures token doesn't exist)
         _modName(tokenId, name); // names token
+        // CHECK FOR THIS: safeMint function calls the onERC721Receiver function on the receiver address
     }
 
     modifier onlyIfSufficientFunds(uint tokenId) {
