@@ -1,6 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.9;
 
+// gotta switch to the LATEST version of the Solidity compiler
+
+// every f'n += C.E.I. pattern
+
 import {ERC721Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC721/ERC721Upgradeable.sol";
 import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
@@ -20,6 +24,13 @@ contract PeachV06 is
     OwnableUpgradeable,
     UUPSUpgradeable
 {
+    // OK, y'know, right off the bat, we gotta change names for clarity...
+    // 'owner' and 'name' and 'symbol' are all in the context of the contract,
+    // thus just using 'owner' and 'name', for the context of the token, is confusing,
+    // so instead, I gotta use 'tokenOwner' and 'tokenName' for the context of the token,
+    // which sucks 'cause it's a longer variable-name, but it totally disambiguates,
+    // and this carries into a renaming of their get/set/nix- functions
+
     // For mapping a token's ID to a token's name.
     mapping(uint => string) private _names;
 
@@ -36,6 +47,7 @@ contract PeachV06 is
 
     event UpgradeabilityEnded(address upgradeabilityEnder);
 
+    // better version: event Withdrawal(address indexed user, uint256 amount);
     event Withdrew(uint amount);
 
     /**
@@ -149,7 +161,21 @@ contract PeachV06 is
         //         // sending to prevent reentrancy attacks
         //         pendingWithdrawals[msg.sender] = 0;
         //         payable(msg.sender).transfer(amount);
+        // another example of reentrancy protection:
+        // uint share = shares[msg.sender]; // (checks)
+        // shares[msg.sender] = 0; // effects
+        // payable(msg.sender).transfer(share); // interactions
+
+        //         Checks: Verify the caller's state (e.g., ensure the caller has a balance to withdraw).
+        //         Effects: Update global state (e.g., decrease the caller's balance in a mapping).
+        //         Interactions: If checks pass, perform an external call (e.g., transfer tokens).
+        // ...how relevant is a reentrancy attack if it's only me who's withdrawing, and I know my callback f'n?
+        // ...how easy / vulnerable is it to update the owner?
     }
+
+    // Fallback Function: Implement a fallback function with the payable modifier to handle incoming Ether transfers securely.
+
+    // Receive function: implement this.
 
     /**
      * @notice Destroys a token.
@@ -257,6 +283,8 @@ contract PeachV06 is
     modifier onlyValidName(string memory n) {
         require(bytes(n).length < 25, "name too long"); // max length: 24 characters
         // eventually; it("can not accept a multi-line name");
+
+        // THIS is where I should check for code injection vulnerabilities
         _;
     }
 
@@ -307,6 +335,10 @@ contract PeachV06 is
         // ...next line should probably be an 'assert', since it is critical internal logic
         // require(n < 16777216, "too large tokenId"); // just should NOT happen, based on above construction
         return n;
+
+        // I should check that I'm not constructing, or accepting, anything with an overflow/underflow vulnerability
+
+        // how much gas is this, and should this be part of a LIB?
     }
 
     /**
@@ -324,6 +356,10 @@ contract PeachV06 is
             n >>= 4; // shift the decimal number rightwards by 4 bits, allowing subsequent conversions of decimal number's 4 rightmost bits to a hexadecimal numeral
         }
         return string(colorhex); // color-hexadecimal number is actually a string, which is a stringing together of the correctly placed hexadecimal numerals
+
+        // I should check that I'm not constructing, or accepting, anything with an overflow/underflow vulnerability
+
+        // how much gas is this, and should this be part of a LIB?
     }
 
     /**
@@ -379,6 +415,8 @@ contract PeachV06 is
             abi.encodePacked("data:application/json;base64,", json)
         );
         return output;
+
+        // I should check that I'm not constructing, or accepting, anything with an overflow/underflow vulnerability
     }
 }
 
