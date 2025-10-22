@@ -5,6 +5,36 @@ pragma solidity ^0.8.9;
 
 // every f'n += C.E.I. pattern
 
+// and re-write Checks, from one combo positive-case IFs, to many solo negative-case IFs, like: if(bytes(name).length == 0) throw;
+// "the sooner we fail, the easier it will be to find the problem."
+// consider function modifiers for these
+
+// storing intermediate results in temporary variables.
+// This method ensures that the evaluation order remains unambiguous, regardless of compiler variations or complex functional interactions.
+
+// write code so the lines are so easy to read, e.g.:
+// modifier stopInEmergency { if (!stopped) _; }
+// if (msg.sender != curator) throw;
+// employee.send(bonus);
+// ...also, make functions as short as possible (<40 lines, 1 min): independent logic into modules: each with a single responsibility
+// ...and make names (var & f'n) clear: express intent
+// ...and start Event names with "Log", e.g., "LogTransfer"
+
+// check the success of the external call before simply continuing execution
+// safer to revert, i/o return 'false', 'cause then there's a revert i/o leaving responsibility to the caller
+// use modifiers to make code cleaner and understandable (modifiers are macros compiled inline).
+
+// Surround top level declarations in Solidity source with two blank lines.
+// Within a contract surround function declarations with a single blank line.
+// Maximum suggested line length is 120 characters.
+// Functions should be grouped according to their visibility and ordered:
+//     constructor, receive function (if exists), fallback function (if exists), external, public, internal, private
+// For control structures whose body contains a single statement, omitting the braces is ok if the statement is contained on a single line.
+// The modifier order for a function should be: Visibility, Mutability, Virtual, Override, Custom modifiers
+// Inside each contract, library or interface, use the following order:, Type declarations, State variables, Events, Errors, Modifiers, Functions
+// Contracts and libraries should be named using the CapWords style. Examples: SimpleToken, SmartBank, CertificateHashRepository, Player, Congress, Owned.
+// Contract and library names should also match their filenames.
+
 import {ERC721Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC721/ERC721Upgradeable.sol";
 import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
@@ -171,11 +201,26 @@ contract PeachV06 is
         //         Interactions: If checks pass, perform an external call (e.g., transfer tokens).
         // ...how relevant is a reentrancy attack if it's only me who's withdrawing, and I know my callback f'n?
         // ...how easy / vulnerable is it to update the owner?
+
+        // send vs. transfer?
+
+        // consider:
+        // function withdrawBid() external {
+        //     uint refund = refunds[msg.sender];
+        //     refunds[msg.sender] = 0;
+        //     if (!msg.sender.send(refund)) {
+        //       refunds[msg.sender] = refund;
+        //     }
+        // }
+
+        // also consider: using call if I'm simply sending ETH
+
+        // always assume that transfers and external calls (of instance) can trigger revert
     }
 
     // Fallback Function: Implement a fallback function with the payable modifier to handle incoming Ether transfers securely.
-
     // Receive function: implement this.
+    // https://scsfg.io/hackers/unexpected-ether/
 
     /**
      * @notice Destroys a token.
@@ -221,6 +266,8 @@ contract PeachV06 is
 
     function _modOwner(uint tokenId, address newOwner) private {
         _safeTransfer(msg.sender, newOwner, tokenId); // gives token (first ensures token exists and is owned)
+
+        // ensure there's something like: require( _to != address(this) )
     }
 
     /**
@@ -339,6 +386,8 @@ contract PeachV06 is
         // I should check that I'm not constructing, or accepting, anything with an overflow/underflow vulnerability
 
         // how much gas is this, and should this be part of a LIB?
+
+        // is there a LIB already existing for this, that's been audited/tested, so I'm not rolling my own?
     }
 
     /**
