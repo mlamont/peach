@@ -216,6 +216,10 @@ contract PeachV06 is
         // also consider: using call if I'm simply sending ETH
 
         // always assume that transfers and external calls (of instance) can trigger revert
+
+        // HAVE TO USE:
+        // (bool success, ) = recipient.call{value:amt}("");
+        // require(success, "Transfer failed.");
     }
 
     // Fallback Function: Implement a fallback function with the payable modifier to handle incoming Ether transfers securely.
