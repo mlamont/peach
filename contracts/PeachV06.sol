@@ -5,6 +5,10 @@ pragma solidity ^0.8.9;
 
 // every f'n += C.E.I. pattern
 
+// functions: small (modular: do one specific thing!), clear ( > performant), simple (reduce likelihood of errors)
+
+// should make this pausable: to handle really bad bugs
+
 // and re-write Checks, from one combo positive-case IFs, to many solo negative-case IFs, like: if(bytes(name).length == 0) throw;
 // "the sooner we fail, the easier it will be to find the problem."
 // consider function modifiers for these
@@ -120,6 +124,7 @@ contract PeachV06 is
                 .value;
     }
 
+    // so, like, have there been any documented security concerns with the Hardhat-UUPS upgrade process?
     function _authorizeUpgrade(address) internal view override onlyOwner {
         require(
             !upgradeabilityEnded(),
@@ -488,4 +493,12 @@ coding aims
 - comment @ test'bl /ST, then translate comments into tests
 - assert @ /ST
 - isolate @ /ST
+
+Three central principles underpin this composability: modularity, autonomy, and discoverability.
+Modularity refers to the capacity of individual components to perform specific tasks.
+The separation into modules should be based on the separation of concerns in the business logic domain.
+Autonomy means that these composable components, each Ethereum smart contract, can operate independently.
+A smart contract can be an isolated system without external factors unless specifically designed to integrate with an external system.
+This feature fosters faster development for localized features and enhances testability.
+
 */
