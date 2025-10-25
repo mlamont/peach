@@ -39,6 +39,15 @@ pragma solidity ^0.8.9;
 // Contracts and libraries should be named using the CapWords style. Examples: SimpleToken, SmartBank, CertificateHashRepository, Player, Congress, Owned.
 // Contract and library names should also match their filenames.
 
+// validate inputs AND validate (via assert?) outputs (!)
+// LO all OZ contracts, both upgradeable & not
+// xfer'g tokens (ETH, colors) to the contract address does ...what? (can withdraw ETH, but what about colors?)
+// would pausing stop upgrades?
+// oh, and do pausable
+// no external calls from a function-modifier, b/c breaks C-E-I (!)
+// function() payable { require(msg.data.length == 0); emit LogDepositReceived(msg.sender); }
+// ..."require" else unexpected beh'r if fallback is from unintended f'n call
+
 import {ERC721Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC721/ERC721Upgradeable.sol";
 import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
