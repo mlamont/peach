@@ -380,37 +380,51 @@ contract PeachV06 is
 /* --- --- ---
 BACKLOG OF SECURITY NOTES
 
-HAVE TO USE:
-(bool success, ) = recipient.call{value:amt}("");
-require(success, "Transfer failed.");
+CHECK FOR THIS: safeMint function calls the onERC721Receiver function on the receiver address
 
-better version: event Withdrawal(address indexed user, uint256 amount);
+so, like, have there been any documented security concerns with the Hardhat-UUPS upgrade process?
+
+validate inputs AND validate (via assert?) outputs (!)
+
+in _modOwner(), ensure there's something like: require( _to != address(this) )
+xfer'g tokens (ETH, colors) to the contract address does ...what? (can withdraw ETH, but what about colors?)
 
 gotta switch to the LATEST version of the Solidity compiler
 
 every f'n += C.E.I. pattern
+Checks: Verify the caller's state (e.g., ensure the caller has a balance to withdraw).
+Effects: Update global state (e.g., decrease the caller's balance in a mapping).
+Interactions: If checks pass, perform an external call (e.g., transfer tokens).
 
-in tokenURI(), I should check that I'm not constructing, or accepting, anything with an overflow/underflow vulnerability
+in { tokenURI(), getColorhex(), validateColorhexAndGetId() }, I should check that I'm not constructing, or accepting, anything with an overflow/underflow vulnerability
 
-in getColorhex(), I should check that I'm not constructing, or accepting, anything with an overflow/underflow vulnerability
+how easy / vulnerable is it to update the owner?
+
+HAVE TO USE:
+(bool success, ) = recipient.call{value:amt}("");
+require(success, "Transfer failed.");
+
+Fallback Function: Implement a fallback function with the payable modifier to handle incoming Ether transfers securely.
+Receive function: implement this.
+https://scsfg.io/hackers/unexpected-ether/
+function() payable { require(msg.data.length == 0); emit LogDepositReceived(msg.sender); }
+..."require" else unexpected beh'r if fallback is from unintended f'n call
+
+
+--- --- --- ABOVE ^ : SECURITY-NECESSARY, but FUNCTIONALITY-UNCHANGING ( 0 / 10 )
+
+
+better version: event Withdrawal(address indexed user, uint256 amount);
 
 how much gas is getColorhex(), and should this be part of a LIB?
-
-in validateColorhexAndGetId(), I should check that I'm not constructing, or accepting, anything with an overflow/underflow vulnerability
 
 how much gas is validateColorhexAndGetId(), and should this be part of a LIB?
 
 is there a LIB already existing for validateColorhexAndGetId(), that's been audited/tested, so I'm not rolling my own?
 
-in _modOwner(), ensure there's something like: require( _to != address(this) )
-
-CHECK FOR THIS: safeMint function calls the onERC721Receiver function on the receiver address
-
 functions: small (modular: do one specific thing!), clear ( > performant), simple (reduce likelihood of errors)
 
 should make this pausable: to handle really bad bugs
-
-so, like, have there been any documented security concerns with the Hardhat-UUPS upgrade process?
 
 and re-write Checks, from one combo positive-case IFs, to many solo negative-case IFs, like: if(bytes(name).length == 0) throw;
 "the sooner we fail, the easier it will be to find the problem."
@@ -442,18 +456,10 @@ Inside each contract, library or interface, use the following order:, Type decla
 Contracts and libraries should be named using the CapWords style. Examples: SimpleToken, SmartBank, CertificateHashRepository, Player, Congress, Owned.
 Contract and library names should also match their filenames.
 
-validate inputs AND validate (via assert?) outputs (!)
 LO all OZ contracts, both upgradeable & not
-xfer'g tokens (ETH, colors) to the contract address does ...what? (can withdraw ETH, but what about colors?)
 would pausing stop upgrades?
 oh, and do pausable
 no external calls from a function-modifier, b/c breaks C-E-I (!)
-function() payable { require(msg.data.length == 0); emit LogDepositReceived(msg.sender); }
-..."require" else unexpected beh'r if fallback is from unintended f'n call
-
-Fallback Function: Implement a fallback function with the payable modifier to handle incoming Ether transfers securely.
-Receive function: implement this.
-https://scsfg.io/hackers/unexpected-ether/
 
 OK, y'know, right off the bat, we gotta change names for clarity...
 'owner' and 'name' and 'symbol' are all in the context of the contract,
@@ -461,13 +467,6 @@ thus just using 'owner' and 'name', for the context of the token, is confusing,
 so instead, I gotta use 'tokenOwner' and 'tokenName' for the context of the token,
 which sucks 'cause it's a longer variable-name, but it totally disambiguates,
 and this carries into a renaming of their get/set/nix- functions
-
-how relevant is a reentrancy attack if it's only me who's withdrawing, and I know my callback f'n?
-how easy / vulnerable is it to update the owner?
-
-Checks: Verify the caller's state (e.g., ensure the caller has a balance to withdraw).
-Effects: Update global state (e.g., decrease the caller's balance in a mapping).
-Interactions: If checks pass, perform an external call (e.g., transfer tokens).
 
 Three central principles underpin this composability: modularity, autonomy, and discoverability.
 Modularity refers to the capacity of individual components to perform specific tasks.
