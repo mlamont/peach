@@ -1,53 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.9;
 
-// gotta switch to the LATEST version of the Solidity compiler
-
-// every f'n += C.E.I. pattern
-
-// functions: small (modular: do one specific thing!), clear ( > performant), simple (reduce likelihood of errors)
-
-// should make this pausable: to handle really bad bugs
-
-// and re-write Checks, from one combo positive-case IFs, to many solo negative-case IFs, like: if(bytes(name).length == 0) throw;
-// "the sooner we fail, the easier it will be to find the problem."
-// consider function modifiers for these
-
-// storing intermediate results in temporary variables.
-// This method ensures that the evaluation order remains unambiguous, regardless of compiler variations or complex functional interactions.
-
-// write code so the lines are so easy to read, e.g.:
-// modifier stopInEmergency { if (!stopped) _; }
-// if (msg.sender != curator) throw;
-// employee.send(bonus);
-// ...also, make functions as short as possible (<40 lines, 1 min): independent logic into modules: each with a single responsibility
-// ...and make names (var & f'n) clear: express intent
-// ...and start Event names with "Log", e.g., "LogTransfer"
-
-// check the success of the external call before simply continuing execution
-// safer to revert, i/o return 'false', 'cause then there's a revert i/o leaving responsibility to the caller
-// use modifiers to make code cleaner and understandable (modifiers are macros compiled inline).
-
-// Surround top level declarations in Solidity source with two blank lines.
-// Within a contract surround function declarations with a single blank line.
-// Maximum suggested line length is 120 characters.
-// Functions should be grouped according to their visibility and ordered:
-//     constructor, receive function (if exists), fallback function (if exists), external, public, internal, private
-// For control structures whose body contains a single statement, omitting the braces is ok if the statement is contained on a single line.
-// The modifier order for a function should be: Visibility, Mutability, Virtual, Override, Custom modifiers
-// Inside each contract, library or interface, use the following order:, Type declarations, State variables, Events, Errors, Modifiers, Functions
-// Contracts and libraries should be named using the CapWords style. Examples: SimpleToken, SmartBank, CertificateHashRepository, Player, Congress, Owned.
-// Contract and library names should also match their filenames.
-
-// validate inputs AND validate (via assert?) outputs (!)
-// LO all OZ contracts, both upgradeable & not
-// xfer'g tokens (ETH, colors) to the contract address does ...what? (can withdraw ETH, but what about colors?)
-// would pausing stop upgrades?
-// oh, and do pausable
-// no external calls from a function-modifier, b/c breaks C-E-I (!)
-// function() payable { require(msg.data.length == 0); emit LogDepositReceived(msg.sender); }
-// ..."require" else unexpected beh'r if fallback is from unintended f'n call
-
 import {ERC721Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC721/ERC721Upgradeable.sol";
 import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
@@ -67,13 +20,6 @@ contract PeachV06 is
     OwnableUpgradeable,
     UUPSUpgradeable
 {
-    // OK, y'know, right off the bat, we gotta change names for clarity...
-    // 'owner' and 'name' and 'symbol' are all in the context of the contract,
-    // thus just using 'owner' and 'name', for the context of the token, is confusing,
-    // so instead, I gotta use 'tokenOwner' and 'tokenName' for the context of the token,
-    // which sucks 'cause it's a longer variable-name, but it totally disambiguates,
-    // and this carries into a renaming of their get/set/nix- functions
-
     // For mapping a token's ID to a token's name.
     mapping(uint => string) private _names;
 
@@ -90,7 +36,6 @@ contract PeachV06 is
 
     event UpgradeabilityEnded(address upgradeabilityEnder);
 
-    // better version: event Withdrawal(address indexed user, uint256 amount);
     event Withdrew(uint amount);
 
     /**
@@ -133,7 +78,6 @@ contract PeachV06 is
                 .value;
     }
 
-    // so, like, have there been any documented security concerns with the Hardhat-UUPS upgrade process?
     function _authorizeUpgrade(address) internal view override onlyOwner {
         require(
             !upgradeabilityEnded(),
@@ -161,7 +105,6 @@ contract PeachV06 is
     ) private onlyIfSufficientFunds(tokenId) {
         _safeMint(msg.sender, tokenId); // creates token (first ensures token doesn't exist)
         _modName(tokenId, name); // names token
-        // CHECK FOR THIS: safeMint function calls the onERC721Receiver function on the receiver address
     }
 
     modifier onlyIfSufficientFunds(uint tokenId) {
@@ -199,46 +142,7 @@ contract PeachV06 is
         uint balanceOfThisContract = address(this).balance;
         payable(owner()).transfer(balanceOfThisContract);
         emit Withdrew(balanceOfThisContract);
-        // do something like this in a withdraw() function:
-        // uint amount = pendingWithdrawals[msg.sender];
-        //         // Remember to zero the pending refund before
-        //         // sending to prevent reentrancy attacks
-        //         pendingWithdrawals[msg.sender] = 0;
-        //         payable(msg.sender).transfer(amount);
-        // another example of reentrancy protection:
-        // uint share = shares[msg.sender]; // (checks)
-        // shares[msg.sender] = 0; // effects
-        // payable(msg.sender).transfer(share); // interactions
-
-        //         Checks: Verify the caller's state (e.g., ensure the caller has a balance to withdraw).
-        //         Effects: Update global state (e.g., decrease the caller's balance in a mapping).
-        //         Interactions: If checks pass, perform an external call (e.g., transfer tokens).
-        // ...how relevant is a reentrancy attack if it's only me who's withdrawing, and I know my callback f'n?
-        // ...how easy / vulnerable is it to update the owner?
-
-        // send vs. transfer?
-
-        // consider:
-        // function withdrawBid() external {
-        //     uint refund = refunds[msg.sender];
-        //     refunds[msg.sender] = 0;
-        //     if (!msg.sender.send(refund)) {
-        //       refunds[msg.sender] = refund;
-        //     }
-        // }
-
-        // also consider: using call if I'm simply sending ETH
-
-        // always assume that transfers and external calls (of instance) can trigger revert
-
-        // HAVE TO USE:
-        // (bool success, ) = recipient.call{value:amt}("");
-        // require(success, "Transfer failed.");
     }
-
-    // Fallback Function: Implement a fallback function with the payable modifier to handle incoming Ether transfers securely.
-    // Receive function: implement this.
-    // https://scsfg.io/hackers/unexpected-ether/
 
     /**
      * @notice Destroys a token.
@@ -284,8 +188,6 @@ contract PeachV06 is
 
     function _modOwner(uint tokenId, address newOwner) private {
         _safeTransfer(msg.sender, newOwner, tokenId); // gives token (first ensures token exists and is owned)
-
-        // ensure there's something like: require( _to != address(this) )
     }
 
     /**
@@ -400,12 +302,6 @@ contract PeachV06 is
         // ...next line should probably be an 'assert', since it is critical internal logic
         // require(n < 16777216, "too large tokenId"); // just should NOT happen, based on above construction
         return n;
-
-        // I should check that I'm not constructing, or accepting, anything with an overflow/underflow vulnerability
-
-        // how much gas is this, and should this be part of a LIB?
-
-        // is there a LIB already existing for this, that's been audited/tested, so I'm not rolling my own?
     }
 
     /**
@@ -423,10 +319,6 @@ contract PeachV06 is
             n >>= 4; // shift the decimal number rightwards by 4 bits, allowing subsequent conversions of decimal number's 4 rightmost bits to a hexadecimal numeral
         }
         return string(colorhex); // color-hexadecimal number is actually a string, which is a stringing together of the correctly placed hexadecimal numerals
-
-        // I should check that I'm not constructing, or accepting, anything with an overflow/underflow vulnerability
-
-        // how much gas is this, and should this be part of a LIB?
     }
 
     /**
@@ -482,12 +374,109 @@ contract PeachV06 is
             abi.encodePacked("data:application/json;base64,", json)
         );
         return output;
-
-        // I should check that I'm not constructing, or accepting, anything with an overflow/underflow vulnerability
     }
 }
 
 /* --- --- ---
+BACKLOG OF SECURITY NOTES
+
+HAVE TO USE:
+(bool success, ) = recipient.call{value:amt}("");
+require(success, "Transfer failed.");
+
+better version: event Withdrawal(address indexed user, uint256 amount);
+
+gotta switch to the LATEST version of the Solidity compiler
+
+every f'n += C.E.I. pattern
+
+in tokenURI(), I should check that I'm not constructing, or accepting, anything with an overflow/underflow vulnerability
+
+in getColorhex(), I should check that I'm not constructing, or accepting, anything with an overflow/underflow vulnerability
+
+how much gas is getColorhex(), and should this be part of a LIB?
+
+in validateColorhexAndGetId(), I should check that I'm not constructing, or accepting, anything with an overflow/underflow vulnerability
+
+how much gas is validateColorhexAndGetId(), and should this be part of a LIB?
+
+is there a LIB already existing for validateColorhexAndGetId(), that's been audited/tested, so I'm not rolling my own?
+
+in _modOwner(), ensure there's something like: require( _to != address(this) )
+
+CHECK FOR THIS: safeMint function calls the onERC721Receiver function on the receiver address
+
+functions: small (modular: do one specific thing!), clear ( > performant), simple (reduce likelihood of errors)
+
+should make this pausable: to handle really bad bugs
+
+so, like, have there been any documented security concerns with the Hardhat-UUPS upgrade process?
+
+and re-write Checks, from one combo positive-case IFs, to many solo negative-case IFs, like: if(bytes(name).length == 0) throw;
+"the sooner we fail, the easier it will be to find the problem."
+consider function modifiers for these
+
+storing intermediate results in temporary variables.
+This method ensures that the evaluation order remains unambiguous, regardless of compiler variations or complex functional interactions.
+
+write code so the lines are so easy to read, e.g.:
+modifier stopInEmergency { if (!stopped) _; }
+if (msg.sender != curator) throw;
+employee.send(bonus);
+...also, make functions as short as possible (<40 lines, 1 min): independent logic into modules: each with a single responsibility
+...and make names (var & f'n) clear: express intent
+...and start Event names with "Log", e.g., "LogTransfer"
+
+check the success of the external call before simply continuing execution
+safer to revert, i/o return 'false', 'cause then there's a revert i/o leaving responsibility to the caller
+use modifiers to make code cleaner and understandable (modifiers are macros compiled inline).
+
+Surround top level declarations in Solidity source with two blank lines.
+Within a contract surround function declarations with a single blank line.
+Maximum suggested line length is 120 characters.
+Functions should be grouped according to their visibility and ordered:
+    constructor, receive function (if exists), fallback function (if exists), external, public, internal, private
+For control structures whose body contains a single statement, omitting the braces is ok if the statement is contained on a single line.
+The modifier order for a function should be: Visibility, Mutability, Virtual, Override, Custom modifiers
+Inside each contract, library or interface, use the following order:, Type declarations, State variables, Events, Errors, Modifiers, Functions
+Contracts and libraries should be named using the CapWords style. Examples: SimpleToken, SmartBank, CertificateHashRepository, Player, Congress, Owned.
+Contract and library names should also match their filenames.
+
+validate inputs AND validate (via assert?) outputs (!)
+LO all OZ contracts, both upgradeable & not
+xfer'g tokens (ETH, colors) to the contract address does ...what? (can withdraw ETH, but what about colors?)
+would pausing stop upgrades?
+oh, and do pausable
+no external calls from a function-modifier, b/c breaks C-E-I (!)
+function() payable { require(msg.data.length == 0); emit LogDepositReceived(msg.sender); }
+..."require" else unexpected beh'r if fallback is from unintended f'n call
+
+Fallback Function: Implement a fallback function with the payable modifier to handle incoming Ether transfers securely.
+Receive function: implement this.
+https://scsfg.io/hackers/unexpected-ether/
+
+OK, y'know, right off the bat, we gotta change names for clarity...
+'owner' and 'name' and 'symbol' are all in the context of the contract,
+thus just using 'owner' and 'name', for the context of the token, is confusing,
+so instead, I gotta use 'tokenOwner' and 'tokenName' for the context of the token,
+which sucks 'cause it's a longer variable-name, but it totally disambiguates,
+and this carries into a renaming of their get/set/nix- functions
+
+how relevant is a reentrancy attack if it's only me who's withdrawing, and I know my callback f'n?
+how easy / vulnerable is it to update the owner?
+
+Checks: Verify the caller's state (e.g., ensure the caller has a balance to withdraw).
+Effects: Update global state (e.g., decrease the caller's balance in a mapping).
+Interactions: If checks pass, perform an external call (e.g., transfer tokens).
+
+Three central principles underpin this composability: modularity, autonomy, and discoverability.
+Modularity refers to the capacity of individual components to perform specific tasks.
+The separation into modules should be based on the separation of concerns in the business logic domain.
+Autonomy means that these composable components, each Ethereum smart contract, can operate independently.
+A smart contract can be an isolated system without external factors unless specifically designed to integrate with an external system.
+This feature fosters faster development for localized features and enhances testability.
+
+
 explore making this contract:
 - ReentrancyGuard
 / Ownable
@@ -502,12 +491,5 @@ coding aims
 - comment @ test'bl /ST, then translate comments into tests
 - assert @ /ST
 - isolate @ /ST
-
-Three central principles underpin this composability: modularity, autonomy, and discoverability.
-Modularity refers to the capacity of individual components to perform specific tasks.
-The separation into modules should be based on the separation of concerns in the business logic domain.
-Autonomy means that these composable components, each Ethereum smart contract, can operate independently.
-A smart contract can be an isolated system without external factors unless specifically designed to integrate with an external system.
-This feature fosters faster development for localized features and enhances testability.
 
 */
