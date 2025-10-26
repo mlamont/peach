@@ -7,6 +7,7 @@ import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/Own
 import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "@openzeppelin/contracts/utils/Base64.sol";
 import {StorageSlot} from "@openzeppelin/contracts/utils/StorageSlot.sol";
+import {ERC721Utils} from "@openzeppelin/contracts/token/ERC721/utils/ERC721Utils.sol";
 
 /**
  * @title Peach
@@ -103,8 +104,21 @@ contract PeachV06 is
         uint tokenId,
         string memory name
     ) private onlyIfSufficientFunds(tokenId) {
-        _safeMint(msg.sender, tokenId); // creates token (first ensures token doesn't exist)
+        _mint(msg.sender, tokenId); // creates token (first ensures token doesn't exist)
         _modName(tokenId, name); // names token
+        ERC721Utils.checkOnERC721Received(
+            _msgSender(),
+            address(0),
+            msg.sender,
+            tokenId,
+            ""
+        ); // ensures that, if token recipient is a contract, then it can handle receiving tokens
+        // WARNING: minting is a source of reentrancy: it calls IERC721Receiver().onERC721received()
+        // SO #1: generally, keep the minting process simple
+        // SO #2: specifically, make this _setToken() a safer _safeMint() by:
+        // ...putting both _mint() & _modName() "effects" before the checkOnERC721Received() "interaction"
+        // OLD: _safeMint(msg.sender, tokenId, ""); // creates token (first ensures token doesn't exist)
+        // OLD: _modName(tokenId, name); // names token
     }
 
     modifier onlyIfSufficientFunds(uint tokenId) {
@@ -187,6 +201,10 @@ contract PeachV06 is
     }
 
     function _modOwner(uint tokenId, address newOwner) private {
+        require(
+            newOwner != address(this),
+            "New token owner cannot be proxy contract."
+        );
         _safeTransfer(msg.sender, newOwner, tokenId); // gives token (first ensures token exists and is owned)
     }
 
@@ -380,14 +398,17 @@ contract PeachV06 is
 /* --- --- ---
 BACKLOG OF SECURITY NOTES
 
-CHECK FOR THIS: safeMint function calls the onERC721Receiver function on the receiver address
+/ CHECK FOR THIS: safeMint function calls the onERC721Receiver function on the receiver address
+/ ... DO: override _safemint() so it calls _mint(), then _modName(), THEN onERC721Received()
+/ ... B/C: reduces risk from inconsistent internal state by following the C.E.I. pattern!
+
+/ in _modOwner(), ensure there's something like: require( _to != address(this) )
+/ xfer'g tokens (ETH, colors) to the contract address does ...what? (can withdraw ETH, but what about colors?)
+/ ... DO: in modOwner(), add: require( newOwner != address(this), "New token owner cannot be proxy contract." )
 
 so, like, have there been any documented security concerns with the Hardhat-UUPS upgrade process?
 
 validate inputs AND validate (via assert?) outputs (!)
-
-in _modOwner(), ensure there's something like: require( _to != address(this) )
-xfer'g tokens (ETH, colors) to the contract address does ...what? (can withdraw ETH, but what about colors?)
 
 gotta switch to the LATEST version of the Solidity compiler
 
@@ -411,7 +432,7 @@ function() payable { require(msg.data.length == 0); emit LogDepositReceived(msg.
 ..."require" else unexpected beh'r if fallback is from unintended f'n call
 
 
---- --- --- ABOVE ^ : SECURITY-NECESSARY, but FUNCTIONALITY-UNCHANGING ( 0 / 10 )
+--- --- --- ABOVE ^ : SECURITY-NECESSARY, but FUNCTIONALITY-UNCHANGING ( 02 / 10 )
 
 
 better version: event Withdrawal(address indexed user, uint256 amount);
