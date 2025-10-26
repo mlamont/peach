@@ -406,11 +406,14 @@ BACKLOG OF SECURITY NOTES
 / xfer'g tokens (ETH, colors) to the contract address does ...what? (can withdraw ETH, but what about colors?)
 / ... DO: in modOwner(), add: require( newOwner != address(this), "New token owner cannot be proxy contract." )
 
-so, like, have there been any documented security concerns with the Hardhat-UUPS upgrade process?
+/ so, like, have there been any documented security concerns with the Hardhat-UUPS upgrade process?
+/ ... DO: nothing: just keep using my deploy process, which includes proper initialization of the implementation/logic contract
 
-validate inputs AND validate (via assert?) outputs (!)
+how easy / vulnerable is it to update the owner?
 
 gotta switch to the LATEST version of the Solidity compiler
+
+validate inputs AND validate (via assert?) outputs (!)
 
 every f'n += C.E.I. pattern
 Checks: Verify the caller's state (e.g., ensure the caller has a balance to withdraw).
@@ -418,8 +421,6 @@ Effects: Update global state (e.g., decrease the caller's balance in a mapping).
 Interactions: If checks pass, perform an external call (e.g., transfer tokens).
 
 in { tokenURI(), getColorhex(), validateColorhexAndGetId() }, I should check that I'm not constructing, or accepting, anything with an overflow/underflow vulnerability
-
-how easy / vulnerable is it to update the owner?
 
 HAVE TO USE:
 (bool success, ) = recipient.call{value:amt}("");
@@ -432,7 +433,7 @@ function() payable { require(msg.data.length == 0); emit LogDepositReceived(msg.
 ..."require" else unexpected beh'r if fallback is from unintended f'n call
 
 
---- --- --- ABOVE ^ : SECURITY-NECESSARY, but FUNCTIONALITY-UNCHANGING ( 02 / 10 )
+--- --- --- ABOVE ^ : SECURITY-NECESSARY, but FUNCTIONALITY-UNCHANGING ( 03 / 10 )
 
 
 better version: event Withdrawal(address indexed user, uint256 amount);
