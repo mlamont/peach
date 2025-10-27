@@ -448,8 +448,18 @@ BACKLOG OF SECURITY NOTES
 Fallback Function: Implement a fallback function with the payable modifier to handle incoming Ether transfers securely.
 Receive function: implement this.
 https://scsfg.io/hackers/unexpected-ether/
-function() payable { require(msg.data.length == 0); emit LogDepositReceived(msg.sender); }
+function() payable { require(msg.data.length == 0); emit LogDepositReceived(msg.sender, msg.value); }
 ..."require" else unexpected beh'r if fallback is from unintended f'n call
+...gotta make sure both will work for UUPS contracts
+
+    event Log(string func, uint256 gas);
+    
+    // Fallback function is called when msg.data is not empty
+    fallback() external payable { emit Log("fallback", gasleft()); }
+    
+    // Function to receive Ether. msg.data must be empty
+    receive() external payable { emit Log("receive", gasleft()); }
+
 
 
 --- --- --- ABOVE ^ : SECURITY-NECESSARY, but FUNCTIONALITY-UNCHANGING ( 09 / 10 )
