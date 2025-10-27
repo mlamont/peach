@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.9;
+pragma solidity 0.8.30;
 
 import {ERC721Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC721/ERC721Upgradeable.sol";
 import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
@@ -104,6 +104,7 @@ contract PeachV06 is
         uint tokenId,
         string memory name
     ) private onlyIfSufficientFunds(tokenId) {
+        require(tokenId < 16777216, "too big number");
         _mint(msg.sender, tokenId); // creates token (first ensures token doesn't exist)
         _modName(tokenId, name); // names token
         ERC721Utils.checkOnERC721Received(
@@ -153,6 +154,7 @@ contract PeachV06 is
 
     function withdraw() public onlyOwner {
         // gotta put the checks-effects-interactions pattern in here
+        require(address(this).balance > 0, "Nothing to withdraw.");
         uint balanceOfThisContract = address(this).balance;
         payable(owner()).transfer(balanceOfThisContract);
         emit Withdrew(balanceOfThisContract);
@@ -169,6 +171,7 @@ contract PeachV06 is
     }
 
     function _nixToken(uint tokenId) private onlyOwnerOf(tokenId) {
+        require(tokenId < 16777216, "too big number");
         _modName(tokenId, ""); // de-names token
         _burn(tokenId); // destroys token (burn function doesn't check for owner-approval, so modifier does, also ensuring existence)
         // _names[tokenId] = ""; // de-names token
@@ -186,6 +189,7 @@ contract PeachV06 is
     }
 
     function _getOwner(uint tokenId) private view returns (address) {
+        require(tokenId < 16777216, "too big number");
         return ownerOf(tokenId); // gets token's owner (first ensures token exists)
     }
 
@@ -201,6 +205,7 @@ contract PeachV06 is
     }
 
     function _modOwner(uint tokenId, address newOwner) private {
+        require(tokenId < 16777216, "too big number");
         require(
             newOwner != address(this),
             "New token owner cannot be proxy contract."
@@ -223,6 +228,7 @@ contract PeachV06 is
     }
 
     function _getName(uint tokenId) private view returns (string memory) {
+        require(tokenId < 16777216, "too big number");
         return _names[tokenId]; // gets token's name
     }
 
@@ -241,6 +247,7 @@ contract PeachV06 is
         uint tokenId,
         string memory newName
     ) private onlyOwnerOf(tokenId) onlyValidName(newName) {
+        require(tokenId < 16777216, "too big number");
         string memory oldName = _getName(tokenId);
         _names[tokenId] = newName; // rename token (first ensures token is owned, which also ensures that it exists)
         emit Rename(oldName, newName, tokenId);
@@ -262,6 +269,7 @@ contract PeachV06 is
     function _getPic(
         uint tokenId
     ) private view onlyExistentToken(tokenId) returns (string memory) {
+        require(tokenId < 16777216, "too big number");
         return tokenURI(tokenId); // gets token's pic
     }
 
@@ -420,13 +428,13 @@ BACKLOG OF SECURITY NOTES
 / ... DO: validate output of getColorhex(): assert that colorhex length is 6
 / ... DO: validate input of tokenURI(): require tokenId to be less than that big number
 
-every f'n += C.E.I. pattern
-Checks: Verify the caller's state (e.g., ensure the caller has a balance to withdraw).
-Effects: Update global state (e.g., decrease the caller's balance in a mapping).
-Interactions: If checks pass, perform an external call (e.g., transfer tokens).
+/ every f'n += C.E.I. pattern
+/ Checks: Verify the caller's state (e.g., ensure the caller has a balance to withdraw).
+/ Effects: Update global state (e.g., decrease the caller's balance in a mapping).
+/ Interactions: If checks pass, perform an external call (e.g., transfer tokens).
 
-gotta switch to the LATEST version of the Solidity compiler
-... v0.8.30
+/ gotta switch to the LATEST version of the Solidity compiler
+/ ... v0.8.30
 
 in { tokenURI(), getColorhex(), validateColorhexAndGetId() }, I should check that I'm not constructing, or accepting, anything with an overflow/underflow vulnerability
 
@@ -441,7 +449,7 @@ function() payable { require(msg.data.length == 0); emit LogDepositReceived(msg.
 ..."require" else unexpected beh'r if fallback is from unintended f'n call
 
 
---- --- --- ABOVE ^ : SECURITY-NECESSARY, but FUNCTIONALITY-UNCHANGING ( 05 / 10 )
+--- --- --- ABOVE ^ : SECURITY-NECESSARY, but FUNCTIONALITY-UNCHANGING ( 07 / 10 )
 
 
 better version: event Withdrawal(address indexed user, uint256 amount);
@@ -453,6 +461,7 @@ how much gas is validateColorhexAndGetId(), and should this be part of a LIB?
 is there a LIB already existing for validateColorhexAndGetId(), that's been audited/tested, so I'm not rolling my own?
 
 functions: small (modular: do one specific thing!), clear ( > performant), simple (reduce likelihood of errors)
+...have the private (:internal) functions just do the unchecked actions, with the public functions doing the validations
 
 should make this pausable: to handle really bad bugs
 
