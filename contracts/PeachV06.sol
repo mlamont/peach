@@ -153,10 +153,12 @@ contract PeachV06 is
     }
 
     function withdraw() public onlyOwner {
-        // gotta put the checks-effects-interactions pattern in here
-        require(address(this).balance > 0, "Nothing to withdraw.");
+        // gotta ensure the checks-effects-interactions pattern is always in here
         uint balanceOfThisContract = address(this).balance;
-        payable(owner()).transfer(balanceOfThisContract);
+        require(balanceOfThisContract > 0, "Nothing to withdraw.");
+        (bool success, ) = owner().call{value: balanceOfThisContract}(""); // call() doesn't require owner() wrapped in payable()
+        require(success, "Withdrawal failed.");
+        // OLD: payable(owner()).transfer(balanceOfThisContract);
         emit Withdrew(balanceOfThisContract);
     }
 
@@ -434,13 +436,14 @@ BACKLOG OF SECURITY NOTES
 / Interactions: If checks pass, perform an external call (e.g., transfer tokens).
 
 / gotta switch to the LATEST version of the Solidity compiler
-/ ... v0.8.30
+/ ... DO: v0.8.30
 
-in { tokenURI(), getColorhex(), validateColorhexAndGetId() }, I should check that I'm not constructing, or accepting, anything with an overflow/underflow vulnerability
+/ in { tokenURI(), getColorhex(), validateColorhexAndGetId() }, I should check that I'm not constructing, or accepting, anything with an overflow/underflow vulnerability
+/ ... DO: nothing: v0.8.x will revert by default if it detects these
 
-HAVE TO USE:
-(bool success, ) = recipient.call{value:amt}("");
-require(success, "Transfer failed.");
+/ HAVE TO USE:
+/ (bool success, ) = recipient.call{value:amt}("");
+/ require(success, "Transfer failed.");
 
 Fallback Function: Implement a fallback function with the payable modifier to handle incoming Ether transfers securely.
 Receive function: implement this.
@@ -449,7 +452,7 @@ function() payable { require(msg.data.length == 0); emit LogDepositReceived(msg.
 ..."require" else unexpected beh'r if fallback is from unintended f'n call
 
 
---- --- --- ABOVE ^ : SECURITY-NECESSARY, but FUNCTIONALITY-UNCHANGING ( 07 / 10 )
+--- --- --- ABOVE ^ : SECURITY-NECESSARY, but FUNCTIONALITY-UNCHANGING ( 09 / 10 )
 
 
 better version: event Withdrawal(address indexed user, uint256 amount);
