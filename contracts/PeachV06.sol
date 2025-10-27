@@ -39,6 +39,8 @@ contract PeachV06 is
 
     event Withdrew(uint amount);
 
+    event LogDepositReceived(address sender, uint amount);
+
     /**
      * @notice Initializes the contract.
      * @dev I'll likely update these to reflect when this is ready for mainnet.
@@ -160,6 +162,11 @@ contract PeachV06 is
         require(success, "Withdrawal failed.");
         // OLD: payable(owner()).transfer(balanceOfThisContract);
         emit Withdrew(balanceOfThisContract);
+    }
+
+    fallback() external payable {
+        require(msg.data.length == 0);
+        emit LogDepositReceived(msg.sender, msg.value);
     }
 
     /**
@@ -445,24 +452,22 @@ BACKLOG OF SECURITY NOTES
 / (bool success, ) = recipient.call{value:amt}("");
 / require(success, "Transfer failed.");
 
-Fallback Function: Implement a fallback function with the payable modifier to handle incoming Ether transfers securely.
-Receive function: implement this.
-https://scsfg.io/hackers/unexpected-ether/
-function() payable { require(msg.data.length == 0); emit LogDepositReceived(msg.sender, msg.value); }
-..."require" else unexpected beh'r if fallback is from unintended f'n call
-...gotta make sure both will work for UUPS contracts
-
-    event Log(string func, uint256 gas);
-    
-    // Fallback function is called when msg.data is not empty
-    fallback() external payable { emit Log("fallback", gasleft()); }
-    
-    // Function to receive Ether. msg.data must be empty
-    receive() external payable { emit Log("receive", gasleft()); }
+/ Fallback Function: Implement a fallback function with the payable modifier to handle incoming Ether transfers securely.
+/ Receive function: implement this.
+/ https://scsfg.io/hackers/unexpected-ether/
+/ fallback() external payable { require(msg.data.length == 0); emit LogDepositReceived(msg.sender, msg.value); }
+/ ..."require" else unexpected beh'r if fallback is from unintended f'n call
+/ ...gotta make sure both will work for UUPS contracts
+/ event Log(string func, uint256 gas);    
+/ Fallback function is called when msg.data is not empty
+/ fallback() external payable { emit Log("fallback", gasleft()); }    
+/ Function to receive Ether. msg.data must be empty
+/ () external payable { emit Log("receive", gasleft()); }
+/ ... DO, then TEST: define event and use: fallback() external payable { require(msg.data.length == 0); emit LogDepositReceived(msg.sender, msg.value); }
 
 
 
---- --- --- ABOVE ^ : SECURITY-NECESSARY, but FUNCTIONALITY-UNCHANGING ( 09 / 10 )
+--- --- --- ABOVE ^ : SECURITY-NECESSARY, but FUNCTIONALITY-UNCHANGING ( 10 / 10 )
 
 
 better version: event Withdrawal(address indexed user, uint256 amount);
