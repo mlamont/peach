@@ -319,6 +319,7 @@ contract PeachV06 is
 
         // ...next line should probably be an 'assert', since it is critical internal logic
         // require(n < 16777216, "too large tokenId"); // just should NOT happen, based on above construction
+        assert(n < 16777216);
         return n;
     }
 
@@ -336,6 +337,7 @@ contract PeachV06 is
             colorhex[6 - i] = _HEX_SYMBOLS[n % (1 << 4)]; // convert the decimal number's 4 rightmost bits into a hexadecimal numeral, then store in correct place
             n >>= 4; // shift the decimal number rightwards by 4 bits, allowing subsequent conversions of decimal number's 4 rightmost bits to a hexadecimal numeral
         }
+        assert(colorhex.length == 6);
         return string(colorhex); // color-hexadecimal number is actually a string, which is a stringing together of the correctly placed hexadecimal numerals
     }
 
@@ -348,6 +350,7 @@ contract PeachV06 is
     function tokenURI(
         uint256 tokenId
     ) public view override returns (string memory) {
+        require(tokenId < 16777216, "too big number");
         string memory name = _getName(tokenId);
         string memory colorhex = getColorhex(tokenId);
         string[7] memory parts;
@@ -412,10 +415,10 @@ BACKLOG OF SECURITY NOTES
 / how easy / vulnerable is it to update the owner?
 / ... DO: nothing: keep using standard process with OZ templates
 
-validate inputs AND validate (via assert?) outputs (!)
-... DO: validate output of validateColorhexAndGetId(): assert version of require(n < 16777216, "too large tokenId");
-... DO: validate output of getColorhex(): assert that colorhex length is 6
-... DO: validate input of tokenURI(): require tokenId to be less than that big number
+/ validate inputs AND validate (via assert?) outputs (!)
+/ ... DO: validate output of validateColorhexAndGetId(): assert version of require(n < 16777216, "too large tokenId");
+/ ... DO: validate output of getColorhex(): assert that colorhex length is 6
+/ ... DO: validate input of tokenURI(): require tokenId to be less than that big number
 
 every f'n += C.E.I. pattern
 Checks: Verify the caller's state (e.g., ensure the caller has a balance to withdraw).
@@ -438,7 +441,7 @@ function() payable { require(msg.data.length == 0); emit LogDepositReceived(msg.
 ..."require" else unexpected beh'r if fallback is from unintended f'n call
 
 
---- --- --- ABOVE ^ : SECURITY-NECESSARY, but FUNCTIONALITY-UNCHANGING ( 04 / 10 )
+--- --- --- ABOVE ^ : SECURITY-NECESSARY, but FUNCTIONALITY-UNCHANGING ( 05 / 10 )
 
 
 better version: event Withdrawal(address indexed user, uint256 amount);
