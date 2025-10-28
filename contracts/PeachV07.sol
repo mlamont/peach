@@ -446,7 +446,7 @@ BACKLOG OF SECURITY NOTES
 / Interactions: If checks pass, perform an external call (e.g., transfer tokens).
 
 / gotta switch to the LATEST version of the Solidity compiler
-/ ... DO: v0.8.30
+/ ... DO: v0.8.28 (supported by HH)
 
 / in { tokenURI(), getColorhex(), validateColorhexAndGetId() }, I should check that I'm not constructing, or accepting, anything with an overflow/underflow vulnerability
 / ... DO: nothing: v0.8.x will revert by default if it detects these
@@ -467,7 +467,17 @@ BACKLOG OF SECURITY NOTES
 / Function to receive Ether. msg.data must be empty
 / receive() external payable { emit Log("receive", gasleft()); }
 / ... DO, then TEST: define event and use: fallback() external payable { require(msg.data.length == 0); emit LogDepositReceived(msg.sender, msg.value); }
+/ ... DO receive(), since the compile HH-task complained until it was added
 
+REGRESSION TEST:
+/ deploy & verify: Etherscan shows contracts & event
+/ mint: see event, owner, name, NFT pic
+/ change name as owner: see event, owner, name
+/ change owner as other: see same owner, name
+/ change owner as other: see event, owner, name
+/ give ETH as other: see balance, event
+/ withdraw as other: see balance
+/ withdraw as owner: see balance, event
 
 
 --- --- --- ABOVE ^ : SECURITY-NECESSARY, but FUNCTIONALITY-UNCHANGING ( 10 / 10 )
