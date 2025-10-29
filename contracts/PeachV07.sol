@@ -404,7 +404,7 @@ contract PeachV07 is
                     abi.encodePacked(
                         '{"name": "',
                         name,
-                        '", "description": "Dover is totally a test.", "image": "data:image/svg+xml;base64,',
+                        '", "description": "Visit color.rockopera.eth for more.", "image": "data:image/svg+xml;base64,',
                         Base64.encode(bytes(output)),
                         '"}'
                     )
