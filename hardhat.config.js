@@ -4,20 +4,28 @@ require("@nomicfoundation/hardhat-verify");
 require("@openzeppelin/hardhat-upgrades");
 require("dotenv").config();
 
-const PRIVATE_KEY = process.env.PRIVATE_KEY || "0xkey";
-const PRIVATE_KEY2 = process.env.PRIVATE_KEY2 || "0xkey";
+const PRIVATE_KEY = process.env.PRIVATE_KEY;
 
 module.exports = {
   solidity: "0.8.28",
   networks: {
-    sepolia: {
-      url: `https://eth-sepolia.g.alchemy.com/v2/${process.env.alchemyApiKey}`,
-      accounts: [PRIVATE_KEY],
-    },
     mainnet: {
-      url: `https://eth-mainnet.g.alchemy.com/v2/${process.env.alchemyApiKey}`,
-      // from: "0x1B23c1D7Ad49C9c3bdCAA4d7696496C87cc777b7",
-      accounts: [PRIVATE_KEY2],
+      // url: `https://eth-mainnet.g.alchemy.com/v2/${process.env.alchemyApiKey}`,
+      url: `https://mainnet.infura.io/v3/${process.env.infuraApiKey}`,
+      from: "0x1B23c1D7Ad49C9c3bdCAA4d7696496C87cc777b7",
+      accounts: [PRIVATE_KEY],
+      gasPrice: "auto", // Let hardhat determine gas price
+      timeout: 120000, // Increase timeout for mainnet
+      confirmations: 2, // Wait for 2 confirmations
+    },
+    sepolia: {
+      // url: `https://eth-sepolia.g.alchemy.com/v2/${process.env.alchemyApiKey}`,
+      url: `https://sepolia.infura.io/v3/${process.env.infuraApiKey}`,
+      from: "0x1B23c1D7Ad49C9c3bdCAA4d7696496C87cc777b7",
+      accounts: [PRIVATE_KEY],
+      gasPrice: "auto", // Let hardhat determine gas price
+      timeout: 120000, // Increase timeout for mainnet
+      confirmations: 2, // Wait for 2 confirmations
     },
   },
   etherscan: {
