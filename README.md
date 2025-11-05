@@ -1,6 +1,6 @@
 # Rockopera Color
 
-Own a color. Name that color. Make art onchain.
+**Own a color. Name that color. Make art onchain.**
 
 This is onchain art tech for onchain art work: 1 NFT color swatch for each of the 16M+ web colors.
 
@@ -18,7 +18,7 @@ This has 1 admin, me, who is the owner with the rights to withdraw funds, upgrad
 
 My intent is to end upgradeability once a self-determined period of sufficient learning & application has passed.
 
-Working project title: Peach, with related project phases also being named after fruits from the Nintendo game "Animal Crossing: New Horizons".
+Working project titles: Peach (for the backend / smart contract) (this repo) & Cherry (for the frontend / webpage) (another repo), with related project phases also being named after fruits from the Nintendo game "Animal Crossing: New Horizons".
 
 # Install
 
