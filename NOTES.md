@@ -194,3 +194,25 @@ npx hardhat verify --network sepolia PROXY_ADDRESS
   - where ppl can ask questions
 - section: License
   - State license full name or identifier, as listed on the SPDX license list. And state license owner
+
+# Notes for internal documentation
+
+- start with "///" or "/\*\*"
+- add comments before:
+  - contract: title, author, notice, dev
+  - function: notice, dev, param, return
+  - public state var: notice, dev, return
+  - event: notice, dev, param
+- param: 1 per param
+- return: 1 per return
+- notice: Explain to an end user what this does
+- dev: Explain to a developer any extra details
+
+  /// @notice Get the number of tokens which can still be minted.
+  /// @return count The max number of additional NFTs that can be minted by this collection.
+  function numberOfTokensAvailableToMint() external view returns (uint256 count) {
+  // Mint ensures that latestTokenId is always <= maxTokenId
+  unchecked {
+  count = maxTokenId - latestTokenId;
+  }
+  }
