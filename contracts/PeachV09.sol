@@ -11,49 +11,56 @@ import {ERC721Utils} from "@openzeppelin/contracts/token/ERC721/utils/ERC721Util
 
 /// @title Peach
 /// @author Merrill B. Lamont III (rockopera.eth)
-/// @notice Own and name a color. 1 NFT color swatch for each of 16M+ web colors.
-/// @dev All on-chain: this NFT is a deed of ownership, but for a digital asset that is contained within the NFT.
+/// @notice Own a color. Name that color. Make art onchain.
+/// @dev Onchain art tech for onchain art work: 1 NFT color swatch for each of the 16M+ web colors.
 contract PeachV09 is
     Initializable,
     ERC721Upgradeable,
     OwnableUpgradeable,
     UUPSUpgradeable
 {
-    // For mapping a token's ID to a token's name.
+    /// @dev Custom string per unique tokenId, which can appear in the NFT pic.
     mapping(uint => string) private _names;
 
     // For converting from the decimal to the hexadecimal number system.
     bytes16 private constant _HEX_SYMBOLS = "0123456789ABCDEF";
 
+    // Base price per token.
     uint private constant _MINTPRICE = 0.001 ether;
 
+    /// @notice Logs the change to the custom string per unique tokenId.
     event Rename(
         string indexed oldName,
         string indexed newName,
         uint indexed tokenId
     );
 
+    /// @notice Logs who enacted the no-return ending of upgradeability.
     event UpgradeabilityEnded(address upgradeabilityEnder);
 
+    /// @notice Logs the amount withdrawn.
     event Withdrew(uint amount);
 
+    /// @notice Logs a deposit's sender and amount.
     event LogDepositReceived(address sender, uint amount);
 
-    /**
-     * @notice Initializes the contract.
-     * @dev I'll likely update these to reflect when this is ready for mainnet.
-     */
+    /// @notice Disallows this contract having its constructor meaningfully called upon proxy deployment/upgrade.
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
         _disableInitializers();
     }
 
+    /// @notice Initializes the contract.
+    /// @param initialOwner The initial owner of the contract.
+    /// @dev Called by deployment script, setting proxy-level attributes.
     function initialize(address initialOwner) public initializer {
         __ERC721_init("Rockopera Color", "ROC");
         __Ownable_init(initialOwner);
         __UUPSUpgradeable_init();
     }
 
+    /// @notice Ends the upgradeability of the contract, non-reversably.
+    /// @dev Only the contract owner can do this.
     function endUpgradeability() public onlyOwner {
         StorageSlot
             .getBooleanSlot(
@@ -66,6 +73,8 @@ contract PeachV09 is
         emit UpgradeabilityEnded(msg.sender);
     }
 
+    /// @notice Has upgradeability ended?
+    /// @return True for ended upgradeability, False for not ended.
     function upgradeabilityEnded() public view returns (bool) {
         return
             StorageSlot
@@ -79,6 +88,7 @@ contract PeachV09 is
                 .value;
     }
 
+    // Allows upgrade only if called by contract owner, and upgradeability has not ended.
     function _authorizeUpgrade(address) internal view override onlyOwner {
         require(
             !upgradeabilityEnded(),
@@ -86,12 +96,10 @@ contract PeachV09 is
         );
     }
 
-    /**
-     * @notice Creates a token.
-     * @dev Validates colorhex, then passes to a private function to actually do it.
-     * @param colorhex Color's 6-digit hexadecimal representation.
-     * @param name Color's name.
-     */
+    /// @notice Creates a token.
+    /// @dev Validates colorhex, then passes to a private function to actually do it.
+    /// @param colorhex Color's 6-digit hexadecimal representation.
+    /// @param name Color's name.
     function setToken(
         string memory colorhex,
         string memory name
@@ -152,6 +160,8 @@ contract PeachV09 is
         _;
     }
 
+    /// @notice Removes all stored funds from the contract
+    /// @dev Only the contract owner can do this.
     function withdraw() public onlyOwner {
         // gotta ensure the checks-effects-interactions pattern is always in here
         uint balanceOfThisContract = address(this).balance;
@@ -162,19 +172,19 @@ contract PeachV09 is
         emit Withdrew(balanceOfThisContract);
     }
 
+    /// @notice Receive function to just receive sent funds, and emits an event.
     receive() external payable {
         emit LogDepositReceived(msg.sender, msg.value);
     }
 
+    /// @notice Fallback function just receives any sent funds, and emits an event.
     fallback() external payable {
         emit LogDepositReceived(msg.sender, msg.value);
     }
 
-    /**
-     * @notice Destroys a token.
-     * @dev Validates colorhex, then passes to a private function to actually do it.
-     * @param colorhex Color's 6-digit hexadecimal representation.
-     */
+    /// @notice Destroys a token.
+    /// @dev Validates colorhex, then passes to a private function to actually do it.
+    /// @param colorhex Color's 6-digit hexadecimal representation.
     function nixToken(string memory colorhex) public {
         uint tokenId = validateColorhexAndGetId(colorhex); // gets tokenId
         _nixToken(tokenId);
@@ -187,12 +197,10 @@ contract PeachV09 is
         // _names[tokenId] = ""; // de-names token
     }
 
-    /**
-     * @notice Retrieves a token's owner.
-     * @dev Validates colorhex, then passes to a private function to actually do it.
-     * @param colorhex Color's 6-digit hexadecimal representation.
-     * @return Token's owner.
-     */
+    /// @notice Retrieves a token's owner.
+    /// @dev Validates colorhex, then passes to a private function to actually do it.
+    /// @param colorhex Color's 6-digit hexadecimal representation.
+    /// @return Token's owner.
     function getOwner(string memory colorhex) public view returns (address) {
         uint tokenId = validateColorhexAndGetId(colorhex); // gets tokenId
         return _getOwner(tokenId);
@@ -203,12 +211,10 @@ contract PeachV09 is
         return ownerOf(tokenId); // gets token's owner (first ensures token exists)
     }
 
-    /**
-     * @notice Changes a token's owner.
-     * @dev Validates colorhex, then passes to a private function to actually do it.
-     * @param colorhex Color's 6-digit hexadecimal representation.
-     * @param newOwner Token's new owner.
-     */
+    /// @notice Changes a token's owner.
+    /// @dev Validates colorhex, then passes to a private function to actually do it.
+    /// @param colorhex Color's 6-digit hexadecimal representation.
+    /// @param newOwner Token's new owner.
     function modOwner(string memory colorhex, address newOwner) public {
         uint tokenId = validateColorhexAndGetId(colorhex); // gets tokenId
         _modOwner(tokenId, newOwner);
@@ -223,12 +229,10 @@ contract PeachV09 is
         _safeTransfer(msg.sender, newOwner, tokenId); // gives token (first ensures token exists and is owned)
     }
 
-    /**
-     * @notice Retrieves a color's name.
-     * @dev Validates colorhex, then passes to a private function to actually do it.
-     * @param colorhex Color's 6-digit hexadecimal representation.
-     * @return Color's name.
-     */
+    /// @notice Retrieves a color's name.
+    /// @dev Validates colorhex, then passes to a private function to actually do it.
+    /// @param colorhex Color's 6-digit hexadecimal representation.
+    /// @return Color's name.
     function getName(
         string memory colorhex
     ) public view returns (string memory) {
@@ -242,12 +246,10 @@ contract PeachV09 is
         return _names[tokenId]; // gets token's name
     }
 
-    /**
-     * @notice Changes a color's name.
-     * @dev Validates colorhex, then passes to a private function to actually do it.
-     * @param colorhex Color's 6-digit hexadecimal representation.
-     * @param newName Color's new name.
-     */
+    /// @notice Changes a color's name.
+    /// @dev Validates colorhex, then passes to a private function to actually do it.
+    /// @param colorhex Color's 6-digit hexadecimal representation.
+    /// @param newName Color's new name.
     function modName(string memory colorhex, string memory newName) public {
         uint tokenId = validateColorhexAndGetId(colorhex); // gets tokenId
         _modName(tokenId, newName);
@@ -263,12 +265,10 @@ contract PeachV09 is
         emit Rename(oldName, newName, tokenId);
     }
 
-    /**
-     * @notice Retrieves a token's picture.
-     * @dev Validates colorhex, then passes to a private function to actually do it.
-     * @param colorhex Color's 6-digit hexadecimal representation.
-     * @return Token's metadata, which includes a SVG-coded picture.
-     */
+    /// @notice Retrieves a token's picture.
+    /// @dev Validates colorhex, then passes to a private function to actually do it.
+    /// @param colorhex Color's 6-digit hexadecimal representation.
+    /// @return Token's metadata, which includes a SVG-coded picture.
     function getPic(
         string memory colorhex
     ) public view returns (string memory) {
@@ -301,12 +301,10 @@ contract PeachV09 is
         _;
     }
 
-    /**
-     * @notice Converts a color's colorhex into its tokenId: the token's internal ID.
-     * @dev Validates and converts a colorhex hexadecimal string into a decimal integer: the tokenId.
-     * @param colorhex Color's 6-digit hexadecimal representation.
-     * @return n Color's tokenId.
-     */
+    /// @notice Converts a color's colorhex into its tokenId: the token's internal ID.
+    /// @dev Validates and converts a colorhex hexadecimal string into a decimal integer: the tokenId.
+    /// @param colorhex Color's 6-digit hexadecimal representation.
+    /// @return n Color's tokenId.
     function validateColorhexAndGetId(
         string memory colorhex
     ) public pure returns (uint n) {
@@ -341,12 +339,10 @@ contract PeachV09 is
         return n;
     }
 
-    /**
-     * @notice Converts a token's tokenId into its colorhex: the color's 6-digit hexadecimal code.
-     * @dev Validates and converts a tokenId decimal integer into a hexadecimal string: the colorhex.
-     * @param n Color's tokenId.
-     * @return colorhex Color's 6-digit hexadecimal representation.
-     */
+    /// @notice Converts a token's tokenId into its colorhex: the color's 6-digit hexadecimal code.
+    /// @dev Validates and converts a tokenId decimal integer into a hexadecimal string: the colorhex.
+    /// @param n Color's tokenId.
+    /// @return Color's 6-digit hexadecimal representation.
     function getColorhex(uint n) public pure returns (string memory) {
         require(n < 16777216, "too big number");
         bytes memory colorhex = new bytes(6); // color-hexadecimal number is one size
@@ -359,12 +355,10 @@ contract PeachV09 is
         return string(colorhex); // color-hexadecimal number is actually a string, which is a stringing together of the correctly placed hexadecimal numerals
     }
 
-    /**
-     * @notice Retrieves a token's URI.
-     * @dev Makes the JSON, which contains the name, description, and picture (an SVG), all on-chain.
-     * @param tokenId Color's tokenId.
-     * @return Token's metadata, which includes a SVG-coded picture.
-     */
+    /// @notice Retrieves a token's URI.
+    /// @dev Makes the JSON, which contains the name, description, and picture (an SVG), all on-chain.
+    /// @param tokenId Color's tokenId.
+    /// @return Token's metadata, which includes a SVG-coded picture.
     function tokenURI(
         uint256 tokenId
     ) public view override returns (string memory) {
@@ -415,148 +409,3 @@ contract PeachV09 is
         return output;
     }
 }
-
-/* --- --- ---
-BACKLOG OF SECURITY NOTES
-
-/ CHECK FOR THIS: safeMint function calls the onERC721Receiver function on the receiver address
-/ ... DO: override _safemint() so it calls _mint(), then _modName(), THEN onERC721Received()
-/ ... B/C: reduces risk from inconsistent internal state by following the C.E.I. pattern!
-
-/ in _modOwner(), ensure there's something like: require( _to != address(this) )
-/ xfer'g tokens (ETH, colors) to the contract address does ...what? (can withdraw ETH, but what about colors?)
-/ ... DO: in modOwner(), add: require( newOwner != address(this), "New token owner cannot be proxy contract." )
-
-/ so, like, have there been any documented security concerns with the Hardhat-UUPS upgrade process?
-/ ... DO: nothing: just keep using my deploy process, which includes proper initialization of the implementation/logic contract
-
-/ how easy / vulnerable is it to update the owner?
-/ ... DO: nothing: keep using standard process with OZ templates
-
-/ validate inputs AND validate (via assert?) outputs (!)
-/ ... DO: validate output of validateColorhexAndGetId(): assert version of require(n < 16777216, "too large tokenId");
-/ ... DO: validate output of getColorhex(): assert that colorhex length is 6
-/ ... DO: validate input of tokenURI(): require tokenId to be less than that big number
-
-/ every f'n += C.E.I. pattern
-/ Checks: Verify the caller's state (e.g., ensure the caller has a balance to withdraw).
-/ Effects: Update global state (e.g., decrease the caller's balance in a mapping).
-/ Interactions: If checks pass, perform an external call (e.g., transfer tokens).
-
-/ gotta switch to the LATEST version of the Solidity compiler
-/ ... DO: v0.8.28 (supported by HH)
-
-/ in { tokenURI(), getColorhex(), validateColorhexAndGetId() }, I should check that I'm not constructing, or accepting, anything with an overflow/underflow vulnerability
-/ ... DO: nothing: v0.8.x will revert by default if it detects these
-
-/ HAVE TO USE:
-/ (bool success, ) = recipient.call{value:amt}("");
-/ require(success, "Transfer failed.");
-
-/ Fallback Function: Implement a fallback function with the payable modifier to handle incoming Ether transfers securely.
-/ Receive function: implement this.
-/ https://scsfg.io/hackers/unexpected-ether/
-/ fallback() external payable { require(msg.data.length == 0); emit LogDepositReceived(msg.sender, msg.value); }
-/ ..."require" else unexpected beh'r if fallback is from unintended f'n call
-/ ...gotta make sure both will work for UUPS contracts
-/ event Log(string func, uint256 gas);    
-/ Fallback function is called when msg.data is not empty
-/ fallback() external payable { emit Log("fallback", gasleft()); }    
-/ Function to receive Ether. msg.data must be empty
-/ receive() external payable { emit Log("receive", gasleft()); }
-/ ... DO, then TEST: define event and use: fallback() external payable { require(msg.data.length == 0); emit LogDepositReceived(msg.sender, msg.value); }
-/ ... DO receive(), since the compile HH-task complained until it was added
-
-REGRESSION TEST:
-/ deploy & verify: Etherscan shows contracts & event
-/ mint: see event, owner, name, NFT pic
-/ change name as owner: see event, owner, name
-/ change owner as other: see same owner, name
-/ change owner as other: see event, owner, name
-/ give ETH as other: see balance, event
-/ withdraw as other: see balance
-/ withdraw as owner: see balance, event
-
-
---- --- --- ABOVE ^ : SECURITY-NECESSARY, but FUNCTIONALITY-UNCHANGING ( 10 / 10 )
-
-
-better version: event Withdrawal(address indexed user, uint256 amount);
-
-how much gas is getColorhex(), and should this be part of a LIB?
-
-how much gas is validateColorhexAndGetId(), and should this be part of a LIB?
-
-is there a LIB already existing for validateColorhexAndGetId(), that's been audited/tested, so I'm not rolling my own?
-
-functions: small (modular: do one specific thing!), clear ( > performant), simple (reduce likelihood of errors)
-...have the private (:internal) functions just do the unchecked actions, with the public functions doing the validations
-
-should make this pausable: to handle really bad bugs
-
-and re-write Checks, from one combo positive-case IFs, to many solo negative-case IFs, like: if(bytes(name).length == 0) throw;
-"the sooner we fail, the easier it will be to find the problem."
-consider function modifiers for these
-
-storing intermediate results in temporary variables.
-This method ensures that the evaluation order remains unambiguous, regardless of compiler variations or complex functional interactions.
-
-write code so the lines are so easy to read, e.g.:
-modifier stopInEmergency { if (!stopped) _; }
-if (msg.sender != curator) throw;
-employee.send(bonus);
-...also, make functions as short as possible (<40 lines, 1 min): independent logic into modules: each with a single responsibility
-...and make names (var & f'n) clear: express intent
-...and start Event names with "Log", e.g., "LogTransfer"
-
-check the success of the external call before simply continuing execution
-safer to revert, i/o return 'false', 'cause then there's a revert i/o leaving responsibility to the caller
-use modifiers to make code cleaner and understandable (modifiers are macros compiled inline).
-
-Surround top level declarations in Solidity source with two blank lines.
-Within a contract surround function declarations with a single blank line.
-Maximum suggested line length is 120 characters.
-Functions should be grouped according to their visibility and ordered:
-    constructor, receive function (if exists), fallback function (if exists), external, public, internal, private
-For control structures whose body contains a single statement, omitting the braces is ok if the statement is contained on a single line.
-The modifier order for a function should be: Visibility, Mutability, Virtual, Override, Custom modifiers
-Inside each contract, library or interface, use the following order:, Type declarations, State variables, Events, Errors, Modifiers, Functions
-Contracts and libraries should be named using the CapWords style. Examples: SimpleToken, SmartBank, CertificateHashRepository, Player, Congress, Owned.
-Contract and library names should also match their filenames.
-
-LO all OZ contracts, both upgradeable & not
-would pausing stop upgrades?
-oh, and do pausable
-no external calls from a function-modifier, b/c breaks C-E-I (!)
-
-OK, y'know, right off the bat, we gotta change names for clarity...
-'owner' and 'name' and 'symbol' are all in the context of the contract,
-thus just using 'owner' and 'name', for the context of the token, is confusing,
-so instead, I gotta use 'tokenOwner' and 'tokenName' for the context of the token,
-which sucks 'cause it's a longer variable-name, but it totally disambiguates,
-and this carries into a renaming of their get/set/nix- functions
-
-Three central principles underpin this composability: modularity, autonomy, and discoverability.
-Modularity refers to the capacity of individual components to perform specific tasks.
-The separation into modules should be based on the separation of concerns in the business logic domain.
-Autonomy means that these composable components, each Ethereum smart contract, can operate independently.
-A smart contract can be an isolated system without external factors unless specifically designed to integrate with an external system.
-This feature fosters faster development for localized features and enhances testability.
-
-
-explore making this contract:
-- ReentrancyGuard
-/ Ownable
-- Metadata
-
-coding aims
-- readability (maintainability++)
-- simple (low combinatorial complexity)
-- store less on-chain
-- use less gas (mappings > arrays) (const/immutable var.s) (nix unused variables)
-- update tests, then update code
-- comment @ test'bl /ST, then translate comments into tests
-- assert @ /ST
-- isolate @ /ST
-
-*/
