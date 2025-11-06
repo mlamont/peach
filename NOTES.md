@@ -216,3 +216,18 @@ npx hardhat verify --network sepolia PROXY_ADDRESS
   count = maxTokenId - latestTokenId;
   }
   }
+
+# gas optimization notes
+
+- name size limit: 25 is arbitrary... do 32: matches (honors) tech limit: 32 bytes.
+- pre-calc't static values, i.e., init'l'z variables to a static value ("0x23f..."), not to a calculated value (keccak256(...)).
+- if a variable is only ever gonna be a constant, then just make it a constant (...an immutable?).
+- skip declaring temp/intermediate variables.
+- mapping > array.
+- fixed-length arrays > dynamic-length arrays.
+- for better data packing, specify var for array: unit8[] > uint[].
+- reduce functions calling other functions.
+- reduce multiple changes to state variables: have a temp var go thru the changes, then give to state var when done
+- higher # of runs by optimizer: higher deployment cost & lower runtime cost
+- combine loops where possible
+-
