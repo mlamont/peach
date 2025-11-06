@@ -241,4 +241,12 @@ npx hardhat verify --network sepolia PROXY_ADDRESS
 - uint i = 1; uint j = 2; require(j == i++, "This will be false as i is incremented after the comparison");
 - cache in a local var i/o reading a state var multiple times from a f'n
 - require/revert strings: be less than 32 bytes
--
+- INV why: don't use bools for storage
+- if a 'public' function is not to be called by the contract, make it 'external'
+- abi.encodePacked() > abi.encode()
+- Expressions for constant values such as a call to keccak256(), should use immutable rather than constant.
+- Multiplication/division by two should use bit shifting
+- use \_burn() to get a gas refund
+- Using > 0 costs more gas than != 0 when used on a uint in a require() statement.
+- do: if(x) or if(!x), i/o: if(x == true) or if(x == false)
+- asdf
