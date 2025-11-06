@@ -249,4 +249,10 @@ npx hardhat verify --network sepolia PROXY_ADDRESS
 - use \_burn() to get a gas refund
 - Using > 0 costs more gas than != 0 when used on a uint in a require() statement.
 - do: if(x) or if(!x), i/o: if(x == true) or if(x == false)
+- accessing a mapped value involves fresh keccak256 hashing, so hold in a temp var if accessing a lot
+- "<" uses less gas than "<="
+- Using 'memory' requires copying it from 'calldata' (extra!), but then y'could mutate it (unlike calldata!).
+- if can, use bytes32 (fixed, 20% gas) i/o string (unbounded)
+- revert ASAP (prevents unnecessary gas usage)
+- aim for fixed-length arrays if know the length of an array
 - asdf
