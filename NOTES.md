@@ -230,4 +230,15 @@ npx hardhat verify --network sepolia PROXY_ADDRESS
 - reduce multiple changes to state variables: have a temp var go thru the changes, then give to state var when done
 - higher # of runs by optimizer: higher deployment cost & lower runtime cost
 - combine loops where possible
+- if simple: implement locally > use library
+- LU how to use a library to save on gas
+- use 'external' if appropriate (won't be called internally); param loc'n is forced to be 'calldata'
+- Reading from storage costs 200 per SLOAD instruction, and writing to storage costs 5000 gas, but reading from memory and writing to memory costs only 3 gas.
+- use bytes32 i/o string, for small strings
+- if overflow/underflow ain't possible, use unchecked{} block
+- store array length as a var, i/o always looking it up in a for-loop
+- ++i is cheaper (!)
+- uint i = 1; uint j = 2; require(j == i++, "This will be false as i is incremented after the comparison");
+- cache in a local var i/o reading a state var multiple times from a f'n
+- require/revert strings: be less than 32 bytes
 -
