@@ -255,4 +255,7 @@ npx hardhat verify --network sepolia PROXY_ADDRESS
 - if can, use bytes32 (fixed, 20% gas) i/o string (unbounded)
 - revert ASAP (prevents unnecessary gas usage)
 - aim for fixed-length arrays if know the length of an array
-- asdf
+- use libraries (an example of splitting contracts) to reduce deployment cost
+- calling a function once? then inline its code in the calling function! This reduces # of functions.
+- shorten the strings of error messages
+- INV using functions instead of modifiers
