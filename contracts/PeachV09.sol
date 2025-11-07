@@ -59,6 +59,7 @@ contract PeachV09 is
         __UUPSUpgradeable_init();
     }
 
+    // TODO: use as constant: bytes32(uint256(keccak256("eip1967.proxy.upgradeabilityEnded")) - 1)
     /// @notice Ends the upgradeability of the contract, non-reversably.
     /// @dev Only the contract owner can do this.
     function endUpgradeability() external onlyOwner {
@@ -73,6 +74,7 @@ contract PeachV09 is
         emit UpgradeabilityEnded(msg.sender);
     }
 
+    // TODO: use as constant: bytes32(uint256(keccak256("eip1967.proxy.upgradeabilityEnded")) - 1)
     /// @notice Has upgradeability ended?
     /// @return True for ended upgradeability, False for not ended.
     function upgradeabilityEnded() public view returns (bool) {
@@ -130,6 +132,7 @@ contract PeachV09 is
         // OLD: _modName(tokenId, name); // names token
     }
 
+    // TODO: switch out requires w/ ">=" for a custom error w/ "<"
     modifier onlyIfSufficientFunds(uint tokenId) {
         if (tokenId == 0 || tokenId == 16777215) {
             // extra premium pricing for: black, white
@@ -165,7 +168,7 @@ contract PeachV09 is
     function withdraw() external onlyOwner {
         // gotta ensure the checks-effects-interactions pattern is always in here
         uint balanceOfThisContract = address(this).balance;
-        require(balanceOfThisContract > 0, "Nothing to withdraw.");
+        require(balanceOfThisContract != 0, "Nothing to withdraw.");
         (bool success, ) = owner().call{value: balanceOfThisContract}(""); // call() doesn't require owner() wrapped in payable()
         require(success, "Withdrawal failed.");
         // OLD: payable(owner()).transfer(balanceOfThisContract);
@@ -306,6 +309,9 @@ contract PeachV09 is
         _;
     }
 
+    // TODO: change "* 16 ** i" into using bit shifting
+    // TODO: set a var to be bytes(colorhex) so not repeatedly calling a string memory
+    // TODO: this is the function to optimize the most: called all the time!
     /// @notice Converts a color's colorhex into its tokenId: the token's internal ID.
     /// @dev Validates and converts a colorhex hexadecimal string into a decimal integer: the tokenId.
     /// @param colorhex Color's 6-digit hexadecimal representation.
@@ -316,19 +322,19 @@ contract PeachV09 is
         // decimal number 'n' is birthed, to be constructed, then returned
         require(bytes(colorhex).length == 6, "improper size");
         // color-hexadecimal number is iterated through, but starting with lowest numeral
-        for (uint i = 0; i < 6; ++i) {
+        for (uint i; i < 6; ++i) {
             // hexadecimal numeral is represented as its place (0-127) within the ASCII character mapping
             uint a = uint8(bytes(colorhex)[5 - i]);
             // ASCII 0-9: decimal 0-9
-            if (a >= 48 && a <= 57) {
+            if (a > 47 && a < 58) {
                 n += (a - 48) * (16 ** i);
             }
             // ASCII A-F: decimal 10-15
-            else if (a >= 65 && a <= 70) {
+            else if (a > 64 && a < 71) {
                 n += (a - 55) * (16 ** i);
             }
             // ASCII a-f: decimal 10-15
-            else if (a >= 97 && a <= 102) {
+            else if (a > 96 && a < 103) {
                 n += (a - 87) * (16 ** i);
             }
             // incoming string was not completely made of ASCII characters mapping to valid hexadecimal numerals
@@ -344,6 +350,7 @@ contract PeachV09 is
         return n;
     }
 
+    // TODO: optimizing this, but it seems to only be used by tokenURI
     /// @notice Converts a token's tokenId into its colorhex: the color's 6-digit hexadecimal code.
     /// @dev Validates and converts a tokenId decimal integer into a hexadecimal string: the colorhex.
     /// @param n Color's tokenId.
@@ -360,6 +367,9 @@ contract PeachV09 is
         return string(colorhex); // color-hexadecimal number is actually a string, which is a stringing together of the correctly placed hexadecimal numerals
     }
 
+    // TODO: switch from string array to group of strings, e.g., per an Appleseed version
+    // TODO: save pre-cal'd values (some SVG code strings) as constants
+    // TODO: reduce casting from bytes to string to bytes again, unnecessarily
     /// @notice Retrieves a token's URI.
     /// @dev Makes the JSON, which contains the name, description, and picture (an SVG), all on-chain.
     /// @param tokenId Color's tokenId.
