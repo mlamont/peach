@@ -219,12 +219,17 @@ npx hardhat verify --network sepolia PROXY_ADDRESS
 
 # gas optimization notes
 
-- name size limit: 25 is arbitrary... do 32: matches (honors) tech limit: 32 bytes.
-- revert ASAP (prevents unnecessary gas usage)
-- use 'external' if appropriate (won't be called internally); param loc'n is forced to be 'calldata'
-- if a 'public' function is not to be called by the contract, make it 'external'
+/ name size limit: 25 is arbitrary... do 32: matches (honors) tech limit: 32 bytes.
+
+/ revert ASAP (prevents unnecessary gas usage)
+
+/ if a 'public' function is not to be called by the contract, make it 'external'
+
+/ use 'external' if appropriate (won't be called internally); param loc'n is forced to be 'calldata'
+
 - store array length as a var, i/o always looking it up in a for-loop
 - ++i is cheaper (!)
+- don't initialize to default values
 - uint i = 1; uint j = 2; require(j == i++, "This will be false as i is incremented after the comparison");
 - combine loops where possible
 - "<" uses less gas than "<="

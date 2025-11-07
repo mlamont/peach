@@ -61,7 +61,7 @@ contract PeachV09 is
 
     /// @notice Ends the upgradeability of the contract, non-reversably.
     /// @dev Only the contract owner can do this.
-    function endUpgradeability() public onlyOwner {
+    function endUpgradeability() external onlyOwner {
         StorageSlot
             .getBooleanSlot(
                 bytes32(
@@ -101,16 +101,16 @@ contract PeachV09 is
     /// @param colorhex Color's 6-digit hexadecimal representation.
     /// @param name Color's name.
     function setToken(
-        string memory colorhex,
-        string memory name
-    ) public payable {
+        string calldata colorhex,
+        string calldata name
+    ) external payable {
         uint tokenId = validateColorhexAndGetId(colorhex); // gets tokenId
         _setToken(tokenId, name);
     }
 
     function _setToken(
         uint tokenId,
-        string memory name
+        string calldata name
     ) private onlyIfSufficientFunds(tokenId) {
         require(tokenId < 16777216, "too big number");
         _mint(msg.sender, tokenId); // creates token (first ensures token doesn't exist)
@@ -162,7 +162,7 @@ contract PeachV09 is
 
     /// @notice Removes all stored funds from the contract
     /// @dev Only the contract owner can do this.
-    function withdraw() public onlyOwner {
+    function withdraw() external onlyOwner {
         // gotta ensure the checks-effects-interactions pattern is always in here
         uint balanceOfThisContract = address(this).balance;
         require(balanceOfThisContract > 0, "Nothing to withdraw.");
@@ -185,7 +185,7 @@ contract PeachV09 is
     /// @notice Destroys a token.
     /// @dev Validates colorhex, then passes to a private function to actually do it.
     /// @param colorhex Color's 6-digit hexadecimal representation.
-    function nixToken(string memory colorhex) public {
+    function nixToken(string calldata colorhex) external {
         uint tokenId = validateColorhexAndGetId(colorhex); // gets tokenId
         _nixToken(tokenId);
     }
@@ -201,7 +201,9 @@ contract PeachV09 is
     /// @dev Validates colorhex, then passes to a private function to actually do it.
     /// @param colorhex Color's 6-digit hexadecimal representation.
     /// @return Token's owner.
-    function getOwner(string memory colorhex) public view returns (address) {
+    function getOwner(
+        string calldata colorhex
+    ) external view returns (address) {
         uint tokenId = validateColorhexAndGetId(colorhex); // gets tokenId
         return _getOwner(tokenId);
     }
@@ -215,7 +217,7 @@ contract PeachV09 is
     /// @dev Validates colorhex, then passes to a private function to actually do it.
     /// @param colorhex Color's 6-digit hexadecimal representation.
     /// @param newOwner Token's new owner.
-    function modOwner(string memory colorhex, address newOwner) public {
+    function modOwner(string calldata colorhex, address newOwner) external {
         uint tokenId = validateColorhexAndGetId(colorhex); // gets tokenId
         _modOwner(tokenId, newOwner);
     }
@@ -234,8 +236,8 @@ contract PeachV09 is
     /// @param colorhex Color's 6-digit hexadecimal representation.
     /// @return Color's name.
     function getName(
-        string memory colorhex
-    ) public view returns (string memory) {
+        string calldata colorhex
+    ) external view returns (string memory) {
         uint tokenId = validateColorhexAndGetId(colorhex); // gets tokenId
         require(_getOwner(tokenId) != address(0), "token doesn't exist"); // token exists
         return _getName(tokenId);
@@ -250,7 +252,10 @@ contract PeachV09 is
     /// @dev Validates colorhex, then passes to a private function to actually do it.
     /// @param colorhex Color's 6-digit hexadecimal representation.
     /// @param newName Color's new name.
-    function modName(string memory colorhex, string memory newName) public {
+    function modName(
+        string calldata colorhex,
+        string calldata newName
+    ) external {
         uint tokenId = validateColorhexAndGetId(colorhex); // gets tokenId
         _modName(tokenId, newName);
     }
@@ -270,8 +275,8 @@ contract PeachV09 is
     /// @param colorhex Color's 6-digit hexadecimal representation.
     /// @return Token's metadata, which includes a SVG-coded picture.
     function getPic(
-        string memory colorhex
-    ) public view returns (string memory) {
+        string calldata colorhex
+    ) external view returns (string memory) {
         uint tokenId = validateColorhexAndGetId(colorhex); // gets tokenId
         return _getPic(tokenId);
     }
@@ -284,7 +289,7 @@ contract PeachV09 is
     }
 
     modifier onlyValidName(string memory n) {
-        require(bytes(n).length < 25, "name too long"); // max length: 24 characters
+        require(bytes(n).length < 33, "name too long"); // max length: 24 characters
         // eventually; it("can not accept a multi-line name");
 
         // THIS is where I should check for code injection vulnerabilities
