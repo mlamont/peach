@@ -244,9 +244,11 @@ npx hardhat verify --network sepolia PROXY_ADDRESS
 / if simple: implement locally > use library
 / shorten the strings of error messages
 /require/revert strings: be less than 32 bytes
+/ reduce multiple changes to state variables: have a temp var go thru the changes, then give to state var when done
+/ INV using functions i/o modifiers (deploy'mt vs. run-t)
+/ declare var in return statement then return it, i/o anon var
 
-- reduce multiple changes to state variables: have a temp var go thru the changes, then give to state var when done
-- INV using functions instead of modifiers
+- Reading from storage costs 200 per SLOAD instruction, and writing to storage costs 5000 gas, but reading from memory and writing to memory costs only 3 gas.
 - use custom errors
 
 - skip declaring temp/intermediate variables.
@@ -254,8 +256,7 @@ npx hardhat verify --network sepolia PROXY_ADDRESS
   - calling a function once? then inline its code in the calling function! This reduces # of functions.
 - use libraries (an example of splitting contracts) to reduce deployment cost
   - LU how to use a library to save on gas
-- higher # of runs by optimizer: higher deployment cost & lower runtime cost
-- Reading from storage costs 200 per SLOAD instruction, and writing to storage costs 5000 gas, but reading from memory and writing to memory costs only 3 gas.
 - if overflow/underflow ain't possible, use unchecked{} block
 - Using 'memory' requires copying it from 'calldata' (extra!), but then y'could mutate it (unlike calldata!).
 - if can, use bytes32 (fixed, 20% gas) i/o string (unbounded)
+- higher # of runs by optimizer: higher deployment cost & lower runtime cost

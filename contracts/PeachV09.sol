@@ -194,6 +194,7 @@ contract PeachV09 is
         // _names[tokenId] = ""; // de-names token
     }
 
+    // TODO: consider declaring & using named returns, then not explicitly returning
     /// @notice Retrieves a token's owner.
     /// @dev Validates colorhex, then passes to a private function to actually do it.
     /// @param colorhex Color's 6-digit hexadecimal representation.
@@ -205,6 +206,7 @@ contract PeachV09 is
         return _getOwner(tokenId);
     }
 
+    // TODO: consider declaring & using named returns, then not explicitly returning
     function _getOwner(uint tokenId) private view returns (address) {
         require(tokenId < 16777216, "too big number");
         return ownerOf(tokenId); // gets token's owner (first ensures token exists)
@@ -225,6 +227,7 @@ contract PeachV09 is
         _safeTransfer(msg.sender, newOwner, tokenId); // gives token (first ensures token exists and is owned)
     }
 
+    // TODO: consider declaring & using named returns, then not explicitly returning
     /// @notice Retrieves a color's name.
     /// @dev Validates colorhex, then passes to a private function to actually do it.
     /// @param colorhex Color's 6-digit hexadecimal representation.
@@ -237,6 +240,7 @@ contract PeachV09 is
         return _getName(tokenId);
     }
 
+    // TODO: consider declaring & using named returns, then not explicitly returning
     function _getName(uint tokenId) private view returns (string memory) {
         require(tokenId < 16777216, "too big number");
         return _names[tokenId]; // gets token's name
@@ -257,13 +261,15 @@ contract PeachV09 is
     function _modName(
         uint tokenId,
         string memory newName
-    ) private onlyOwnerOf(tokenId) onlyValidName(newName) {
+    ) private onlyOwnerOf(tokenId) {
         require(tokenId < 16777216, "too big number");
+        require(bytes(newName).length < 33, "name too long"); // onlyValidName: max length: 24 characters
         string memory oldName = _getName(tokenId);
         _names[tokenId] = newName; // rename token (first ensures token is owned, which also ensures that it exists)
         emit Rename(oldName, newName, tokenId);
     }
 
+    // TODO: consider declaring & using named returns, then not explicitly returning
     /// @notice Retrieves a token's picture.
     /// @dev Validates colorhex, then passes to a private function to actually do it.
     /// @param colorhex Color's 6-digit hexadecimal representation.
@@ -275,19 +281,11 @@ contract PeachV09 is
         return _getPic(tokenId);
     }
 
-    function _getPic(
-        uint tokenId
-    ) private view onlyExistentToken(tokenId) returns (string memory) {
+    // TODO: consider declaring & using named returns, then not explicitly returning
+    function _getPic(uint tokenId) private view returns (string memory) {
         // redundant: require(tokenId < 16777216, "too big number");
+        require(_getOwner(tokenId) != address(0), "token doesn't exist"); // onlyExistentToken: token owner is not the burn address
         return tokenURI(tokenId); // gets token's pic
-    }
-
-    modifier onlyValidName(string memory n) {
-        require(bytes(n).length < 33, "name too long"); // max length: 24 characters
-        // eventually; it("can not accept a multi-line name");
-
-        // THIS is where I should check for code injection vulnerabilities
-        _;
     }
 
     modifier onlyOwnerOf(uint tokenId) {
@@ -295,14 +293,11 @@ contract PeachV09 is
         _;
     }
 
-    modifier onlyExistentToken(uint tokenId) {
-        require(_getOwner(tokenId) != address(0), "token doesn't exist"); // token owner is not the burn address
-        _;
-    }
-
+    // TODO: consider declaring & using named returns, then not explicitly returning
     // TODO: change "* 16 ** i" into using bit shifting
     // TODO: set a var to be bytes(colorhex) so not repeatedly calling a string memory
     // TODO: this is the function to optimize the most: called all the time!
+    // TODO: get function title to have lowest selector number, so less run-t gas in finding it
     /// @notice Converts a color's colorhex into its tokenId: the token's internal ID.
     /// @dev Validates and converts a colorhex hexadecimal string into a decimal integer: the tokenId.
     /// @param colorhex Color's 6-digit hexadecimal representation.
@@ -342,6 +337,8 @@ contract PeachV09 is
     }
 
     // TODO: optimizing this, but it seems to only be used by tokenURI
+    // TODO: consider using "bitwise and" i/o "modulo"
+    // TODO: consider declaring & using named returns, then not explicitly returning
     /// @notice Converts a token's tokenId into its colorhex: the color's 6-digit hexadecimal code.
     /// @dev Validates and converts a tokenId decimal integer into a hexadecimal string: the colorhex.
     /// @param n Color's tokenId.
@@ -361,6 +358,7 @@ contract PeachV09 is
     // TODO: switch from string array to group of strings, e.g., per an Appleseed version
     // TODO: save pre-cal'd values (some SVG code strings) as constants
     // TODO: reduce casting from bytes to string to bytes again, unnecessarily
+    // TODO: consider declaring & using named returns, then not explicitly returning
     /// @notice Retrieves a token's URI.
     /// @dev Makes the JSON, which contains the name, description, and picture (an SVG), all on-chain.
     /// @param tokenId Color's tokenId.
