@@ -95,7 +95,8 @@ contract PeachV09 is
         require(!upgradeabilityEnded(), "Contract is not upgradeable");
     }
 
-    // TODO: inline onlyIfSufficientFunds() here, since only called FROM this f'n
+    // DONE: inline onlyIfSufficientFunds() here, since only called FROM this f'n
+    // TODO: switch out requires w/ ">=" for a custom error w/ "<"
     /// @notice Creates a token.
     /// @dev Validates colorhex, then passes to a private function to actually do it.
     /// @param colorhex Color's 6-digit hexadecimal representation.
@@ -105,34 +106,6 @@ contract PeachV09 is
         string calldata name
     ) external payable {
         uint tokenId = validateColorhexAndGetId(colorhex); // gets tokenId
-        _setToken(tokenId, name);
-    }
-
-    // TODO: consider moving all the _modName() checks into modName(), then inline _modName()
-    function _setToken(
-        uint tokenId,
-        string calldata name
-    ) internal onlyIfSufficientFunds(tokenId) {
-        require(tokenId < 16777216, "too big number");
-        _mint(msg.sender, tokenId); // creates token (first ensures token doesn't exist)
-        _modName(tokenId, name); // names token
-        ERC721Utils.checkOnERC721Received(
-            _msgSender(),
-            address(0),
-            msg.sender,
-            tokenId,
-            ""
-        ); // ensures that, if token recipient is a contract, then it can handle receiving tokens
-        // WARNING: minting is a source of reentrancy: it calls IERC721Receiver().onERC721received()
-        // SO #1: generally, keep the minting process simple
-        // SO #2: specifically, make this _setToken() a safer _safeMint() by:
-        // ...putting both _mint() & _modName() "effects" before the checkOnERC721Received() "interaction"
-        // OLD: _safeMint(msg.sender, tokenId, ""); // creates token (first ensures token doesn't exist)
-        // OLD: _modName(tokenId, name); // names token
-    }
-
-    // TODO: switch out requires w/ ">=" for a custom error w/ "<"
-    modifier onlyIfSufficientFunds(uint tokenId) {
         if (tokenId == 0 || tokenId == 16777215) {
             // extra premium pricing for: black, white
             require(
@@ -156,7 +129,26 @@ contract PeachV09 is
             // regular pricing for: the rest of the Web Colors
             require(msg.value >= _MINTPRICE, "Need more funds for this color."); // should be _MINTPRICE (0.001 ETH)
         }
-        _;
+        _setToken(tokenId, name);
+    }
+
+    // TODO: consider moving all the _modName() checks into modName(), then inline _modName()
+    function _setToken(uint tokenId, string calldata name) internal {
+        _mint(msg.sender, tokenId); // creates token (first ensures token doesn't exist)
+        _modName(tokenId, name); // names token
+        ERC721Utils.checkOnERC721Received(
+            _msgSender(),
+            address(0),
+            msg.sender,
+            tokenId,
+            ""
+        ); // ensures that, if token recipient is a contract, then it can handle receiving tokens
+        // WARNING: minting is a source of reentrancy: it calls IERC721Receiver().onERC721received()
+        // SO #1: generally, keep the minting process simple
+        // SO #2: specifically, make this _setToken() a safer _safeMint() by:
+        // ...putting both _mint() & _modName() "effects" before the checkOnERC721Received() "interaction"
+        // OLD: _safeMint(msg.sender, tokenId, ""); // creates token (first ensures token doesn't exist)
+        // OLD: _modName(tokenId, name); // names token
     }
 
     /// @notice Removes all stored funds from the contract
@@ -190,7 +182,6 @@ contract PeachV09 is
     }
 
     function _nixToken(uint tokenId) internal onlyTokenOwner(tokenId) {
-        require(tokenId < 16777216, "too big number");
         _modName(tokenId, ""); // de-names token
         _burn(tokenId); // destroys token (burn function doesn't check for owner-approval, so modifier does, also ensuring existence)
         // _names[tokenId] = ""; // de-names token
@@ -210,7 +201,6 @@ contract PeachV09 is
 
     // TODO: consider declaring & using named returns, then not explicitly returning
     function _getOwner(uint tokenId) internal view returns (address) {
-        require(tokenId < 16777216, "too big number");
         return ownerOf(tokenId); // gets token's owner (first ensures token exists)
     }
 
@@ -220,12 +210,11 @@ contract PeachV09 is
     /// @param newOwner Token's new owner.
     function modOwner(string calldata colorhex, address newOwner) external {
         uint tokenId = validateColorhexAndGetId(colorhex); // gets tokenId
+        require(newOwner != address(this), "Contract cannot own a token.");
         _modOwner(tokenId, newOwner);
     }
 
     function _modOwner(uint tokenId, address newOwner) internal {
-        require(tokenId < 16777216, "too big number");
-        require(newOwner != address(this), "Contract cannot own a token.");
         _safeTransfer(msg.sender, newOwner, tokenId); // gives token (first ensures token exists and is owned)
     }
 
@@ -244,7 +233,6 @@ contract PeachV09 is
 
     // TODO: consider declaring & using named returns, then not explicitly returning
     function _getName(uint tokenId) internal view returns (string memory) {
-        require(tokenId < 16777216, "too big number");
         return _names[tokenId]; // gets token's name
     }
 
@@ -257,6 +245,7 @@ contract PeachV09 is
         string calldata newName
     ) external {
         uint tokenId = validateColorhexAndGetId(colorhex); // gets tokenId
+        require(bytes(newName).length < 33, "name too long"); // onlyValidName: max length: 24 characters
         _modName(tokenId, newName);
     }
 
@@ -264,8 +253,6 @@ contract PeachV09 is
         uint tokenId,
         string memory newName
     ) internal onlyTokenOwner(tokenId) {
-        require(tokenId < 16777216, "too big number");
-        require(bytes(newName).length < 33, "name too long"); // onlyValidName: max length: 24 characters
         string memory oldName = _getName(tokenId);
         _names[tokenId] = newName; // rename token (first ensures token is owned, which also ensures that it exists)
         emit Rename(oldName, newName, tokenId);
@@ -280,13 +267,12 @@ contract PeachV09 is
         string calldata colorhex
     ) external view returns (string memory) {
         uint tokenId = validateColorhexAndGetId(colorhex); // gets tokenId
+        require(_getOwner(tokenId) != address(0), "token doesn't exist"); // onlyExistentToken: token owner is not the burn address
         return _getPic(tokenId);
     }
 
     // TODO: consider declaring & using named returns, then not explicitly returning
     function _getPic(uint tokenId) internal view returns (string memory) {
-        // redundant: require(tokenId < 16777216, "too big number");
-        require(_getOwner(tokenId) != address(0), "token doesn't exist"); // onlyExistentToken: token owner is not the burn address
         return tokenURI(tokenId); // gets token's pic
     }
 
