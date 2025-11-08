@@ -95,6 +95,7 @@ contract PeachV09 is
         require(!upgradeabilityEnded(), "Contract is not upgradeable");
     }
 
+    // TODO: inline onlyIfSufficientFunds() here, since only called FROM this f'n
     /// @notice Creates a token.
     /// @dev Validates colorhex, then passes to a private function to actually do it.
     /// @param colorhex Color's 6-digit hexadecimal representation.
@@ -107,10 +108,11 @@ contract PeachV09 is
         _setToken(tokenId, name);
     }
 
+    // TODO: consider moving all the _modName() checks into modName(), then inline _modName()
     function _setToken(
         uint tokenId,
         string calldata name
-    ) private onlyIfSufficientFunds(tokenId) {
+    ) internal onlyIfSufficientFunds(tokenId) {
         require(tokenId < 16777216, "too big number");
         _mint(msg.sender, tokenId); // creates token (first ensures token doesn't exist)
         _modName(tokenId, name); // names token
@@ -187,7 +189,7 @@ contract PeachV09 is
         _nixToken(tokenId);
     }
 
-    function _nixToken(uint tokenId) private onlyOwnerOf(tokenId) {
+    function _nixToken(uint tokenId) internal onlyTokenOwner(tokenId) {
         require(tokenId < 16777216, "too big number");
         _modName(tokenId, ""); // de-names token
         _burn(tokenId); // destroys token (burn function doesn't check for owner-approval, so modifier does, also ensuring existence)
@@ -207,7 +209,7 @@ contract PeachV09 is
     }
 
     // TODO: consider declaring & using named returns, then not explicitly returning
-    function _getOwner(uint tokenId) private view returns (address) {
+    function _getOwner(uint tokenId) internal view returns (address) {
         require(tokenId < 16777216, "too big number");
         return ownerOf(tokenId); // gets token's owner (first ensures token exists)
     }
@@ -221,7 +223,7 @@ contract PeachV09 is
         _modOwner(tokenId, newOwner);
     }
 
-    function _modOwner(uint tokenId, address newOwner) private {
+    function _modOwner(uint tokenId, address newOwner) internal {
         require(tokenId < 16777216, "too big number");
         require(newOwner != address(this), "Contract cannot own a token.");
         _safeTransfer(msg.sender, newOwner, tokenId); // gives token (first ensures token exists and is owned)
@@ -241,7 +243,7 @@ contract PeachV09 is
     }
 
     // TODO: consider declaring & using named returns, then not explicitly returning
-    function _getName(uint tokenId) private view returns (string memory) {
+    function _getName(uint tokenId) internal view returns (string memory) {
         require(tokenId < 16777216, "too big number");
         return _names[tokenId]; // gets token's name
     }
@@ -261,7 +263,7 @@ contract PeachV09 is
     function _modName(
         uint tokenId,
         string memory newName
-    ) private onlyOwnerOf(tokenId) {
+    ) internal onlyTokenOwner(tokenId) {
         require(tokenId < 16777216, "too big number");
         require(bytes(newName).length < 33, "name too long"); // onlyValidName: max length: 24 characters
         string memory oldName = _getName(tokenId);
@@ -282,13 +284,13 @@ contract PeachV09 is
     }
 
     // TODO: consider declaring & using named returns, then not explicitly returning
-    function _getPic(uint tokenId) private view returns (string memory) {
+    function _getPic(uint tokenId) internal view returns (string memory) {
         // redundant: require(tokenId < 16777216, "too big number");
         require(_getOwner(tokenId) != address(0), "token doesn't exist"); // onlyExistentToken: token owner is not the burn address
         return tokenURI(tokenId); // gets token's pic
     }
 
-    modifier onlyOwnerOf(uint tokenId) {
+    modifier onlyTokenOwner(uint tokenId) {
         require(_getOwner(tokenId) == msg.sender, "not the owner"); // token owner is current user
         _;
     }
@@ -298,12 +300,13 @@ contract PeachV09 is
     // TODO: set a var to be bytes(colorhex) so not repeatedly calling a string memory
     // TODO: this is the function to optimize the most: called all the time!
     // TODO: get function title to have lowest selector number, so less run-t gas in finding it
+    // TODO: consider unchecked {}
     /// @notice Converts a color's colorhex into its tokenId: the token's internal ID.
     /// @dev Validates and converts a colorhex hexadecimal string into a decimal integer: the tokenId.
     /// @param colorhex Color's 6-digit hexadecimal representation.
     /// @return n Color's tokenId.
     function validateColorhexAndGetId(
-        string memory colorhex
+        string calldata colorhex
     ) public pure returns (uint n) {
         // decimal number 'n' is birthed, to be constructed, then returned
         require(bytes(colorhex).length == 6, "improper size");
@@ -339,6 +342,7 @@ contract PeachV09 is
     // TODO: optimizing this, but it seems to only be used by tokenURI
     // TODO: consider using "bitwise and" i/o "modulo"
     // TODO: consider declaring & using named returns, then not explicitly returning
+    // TODO: consider unchecked {}
     /// @notice Converts a token's tokenId into its colorhex: the color's 6-digit hexadecimal code.
     /// @dev Validates and converts a tokenId decimal integer into a hexadecimal string: the colorhex.
     /// @param n Color's tokenId.
@@ -359,6 +363,7 @@ contract PeachV09 is
     // TODO: save pre-cal'd values (some SVG code strings) as constants
     // TODO: reduce casting from bytes to string to bytes again, unnecessarily
     // TODO: consider declaring & using named returns, then not explicitly returning
+    // TODO: skip using intermediate variables
     /// @notice Retrieves a token's URI.
     /// @dev Makes the JSON, which contains the name, description, and picture (an SVG), all on-chain.
     /// @param tokenId Color's tokenId.
