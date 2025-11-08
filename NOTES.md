@@ -238,23 +238,24 @@ npx hardhat verify --network sepolia PROXY_ADDRESS
 / pre-calc't static values, i.e., init'l'z variables to a static value ("0x23f..."), not to a calculated value (keccak256(...)).
 / if a variable is only ever gonna be a constant, then just make it a constant (...an immutable?).
 / if simple: implement locally > use library
+/ mapping > array.
+/ aim for fixed-length arrays if know the length of an array
+/ reduce multiple changes to state variables: have a temp var go thru the changes, then give to state var when done
+/ if simple: implement locally > use library
+/ shorten the strings of error messages
+/require/revert strings: be less than 32 bytes
 
-- mapping > array.
-- aim for fixed-length arrays if know the length of an array
-- if simple: implement locally > use library
+- reduce multiple changes to state variables: have a temp var go thru the changes, then give to state var when done
+- INV using functions instead of modifiers
+- use custom errors
 
-- Expressions for constant values such as a call to keccak256(), should use immutable rather than constant.
 - skip declaring temp/intermediate variables.
 - reduce functions calling other functions.
   - calling a function once? then inline its code in the calling function! This reduces # of functions.
-- reduce multiple changes to state variables: have a temp var go thru the changes, then give to state var when done
+- use libraries (an example of splitting contracts) to reduce deployment cost
+  - LU how to use a library to save on gas
 - higher # of runs by optimizer: higher deployment cost & lower runtime cost
 - Reading from storage costs 200 per SLOAD instruction, and writing to storage costs 5000 gas, but reading from memory and writing to memory costs only 3 gas.
 - if overflow/underflow ain't possible, use unchecked{} block
-  ≈- Using 'memory' requires copying it from 'calldata' (extra!), but then y'could mutate it (unlike calldata!).
+- Using 'memory' requires copying it from 'calldata' (extra!), but then y'could mutate it (unlike calldata!).
 - if can, use bytes32 (fixed, 20% gas) i/o string (unbounded)
-- use libraries (an example of splitting contracts) to reduce deployment cost
-  - LU how to use a library to save on gas
-- shorten the strings of error messages
-  - require/revert strings: be less than 32 bytes
-- INV using functions instead of modifiers

@@ -92,10 +92,7 @@ contract PeachV09 is
 
     // Allows upgrade only if called by contract owner, and upgradeability has not ended.
     function _authorizeUpgrade(address) internal view override onlyOwner {
-        require(
-            !upgradeabilityEnded(),
-            "This contract is no longer upgradeable."
-        );
+        require(!upgradeabilityEnded(), "Contract is not upgradeable");
     }
 
     /// @notice Creates a token.
@@ -138,7 +135,7 @@ contract PeachV09 is
             // extra premium pricing for: black, white
             require(
                 msg.value >= (10000 * _MINTPRICE),
-                "Insufficient payment for an extra premium color."
+                "Need more funds for this color."
             ); // should be 10000 * _MINTPRICE (10 ETH)
         } else if (
             tokenId == 255 ||
@@ -151,14 +148,11 @@ contract PeachV09 is
             // premium pricing for: blue, green, red, cyan, magenta, yellow
             require(
                 msg.value >= (1000 * _MINTPRICE),
-                "Insufficient payment for a premium color."
+                "Need more funds for this color."
             ); // should be 1000 * _MINTPRICE (1 ETH)
         } else {
             // regular pricing for: the rest of the Web Colors
-            require(
-                msg.value >= _MINTPRICE,
-                "Insufficient payment for a regular color."
-            ); // should be _MINTPRICE (0.001 ETH)
+            require(msg.value >= _MINTPRICE, "Need more funds for this color."); // should be _MINTPRICE (0.001 ETH)
         }
         _;
     }
@@ -227,10 +221,7 @@ contract PeachV09 is
 
     function _modOwner(uint tokenId, address newOwner) private {
         require(tokenId < 16777216, "too big number");
-        require(
-            newOwner != address(this),
-            "New token owner cannot be proxy contract."
-        );
+        require(newOwner != address(this), "Contract cannot own a token.");
         _safeTransfer(msg.sender, newOwner, tokenId); // gives token (first ensures token exists and is owned)
     }
 
@@ -339,7 +330,7 @@ contract PeachV09 is
             }
             // incoming string was not completely made of ASCII characters mapping to valid hexadecimal numerals
             else {
-                revert("Invalid color-hexadecimal string.");
+                revert("Invalid color-hex string.");
             }
         }
         // decimal number is the sum of the hexadecimal values in the hexadecimal number system's places (units, 16's, 256's, etc., instead of units, 10's, 100's, etc.)
