@@ -44,6 +44,24 @@ contract PeachV09 is
     /// @notice Logs a deposit's sender and amount.
     event LogDepositReceived(address sender, uint amount);
 
+    error InvalidTokenName();
+
+    error NotTokenOwner();
+
+    error TokenDNE();
+
+    error ProxyContractCannotBeTokenOwner();
+
+    error NothingToWithdraw();
+
+    error WithdrawalFailed();
+
+    error NeedMoreFundsForThisColor(uint colorMintPrice);
+
+    error InvalidColorhex();
+
+    error InvalidTokenId();
+
     /// @notice Disallows this contract having its constructor meaningfully called upon proxy deployment/upgrade.
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
@@ -96,7 +114,7 @@ contract PeachV09 is
     }
 
     // DONE: inline onlyIfSufficientFunds() here, since only called FROM this f'n
-    // TODO: switch out requires w/ ">=" for a custom error w/ "<"
+    // DONE: switch out requires w/ ">=" for a custom error w/ "<"
     /// @notice Creates a token.
     /// @dev Validates colorhex, then passes to a private function to actually do it.
     /// @param colorhex Color's 6-digit hexadecimal representation.
@@ -106,12 +124,11 @@ contract PeachV09 is
         string calldata name
     ) external payable {
         uint tokenId = validateColorhexAndGetId(colorhex); // gets tokenId
+        if (bytes(name).length > 32) revert InvalidTokenName();
         if (tokenId == 0 || tokenId == 16777215) {
             // extra premium pricing for: black, white
-            require(
-                msg.value >= (10000 * _MINTPRICE),
-                "Need more funds for this color."
-            ); // should be 10000 * _MINTPRICE (10 ETH)
+            if (msg.value < (10000 * _MINTPRICE))
+                revert NeedMoreFundsForThisColor(10000 * _MINTPRICE);
         } else if (
             tokenId == 255 ||
             tokenId == 65280 ||
@@ -121,21 +138,22 @@ contract PeachV09 is
             tokenId == 16776960
         ) {
             // premium pricing for: blue, green, red, cyan, magenta, yellow
-            require(
-                msg.value >= (1000 * _MINTPRICE),
-                "Need more funds for this color."
-            ); // should be 1000 * _MINTPRICE (1 ETH)
+            if (msg.value < (1000 * _MINTPRICE))
+                revert NeedMoreFundsForThisColor(1000 * _MINTPRICE);
         } else {
             // regular pricing for: the rest of the Web Colors
-            require(msg.value >= _MINTPRICE, "Need more funds for this color."); // should be _MINTPRICE (0.001 ETH)
+            if (msg.value < _MINTPRICE)
+                revert NeedMoreFundsForThisColor(_MINTPRICE);
         }
         _setToken(tokenId, name);
     }
 
-    // TODO: consider moving all the _modName() checks into modName(), then inline _modName()
+    // DONE: consider moving all the _modName() checks into modName(), then inline _modName()
     function _setToken(uint tokenId, string calldata name) internal {
         _mint(msg.sender, tokenId); // creates token (first ensures token doesn't exist)
-        _modName(tokenId, name); // names token
+        // _modName(tokenId, name); // names token
+        _names[tokenId] = name; // rename token (first ensures token is owned, which also ensures that it exists)
+        emit Rename("", name, tokenId);
         ERC721Utils.checkOnERC721Received(
             _msgSender(),
             address(0),
@@ -156,9 +174,9 @@ contract PeachV09 is
     function withdraw() external onlyOwner {
         // gotta ensure the checks-effects-interactions pattern is always in here
         uint balanceOfThisContract = address(this).balance;
-        require(balanceOfThisContract != 0, "Nothing to withdraw.");
+        if (balanceOfThisContract == 0) revert NothingToWithdraw();
         (bool success, ) = owner().call{value: balanceOfThisContract}(""); // call() doesn't require owner() wrapped in payable()
-        require(success, "Withdrawal failed.");
+        if (!success) revert WithdrawalFailed();
         // OLD: payable(owner()).transfer(balanceOfThisContract);
         emit Withdrew(balanceOfThisContract);
     }
@@ -187,21 +205,23 @@ contract PeachV09 is
         // _names[tokenId] = ""; // de-names token
     }
 
-    // TODO: consider declaring & using named returns, then not explicitly returning
+    // DONE: consider declaring & using named returns, then not explicitly returning
     /// @notice Retrieves a token's owner.
     /// @dev Validates colorhex, then passes to a private function to actually do it.
     /// @param colorhex Color's 6-digit hexadecimal representation.
-    /// @return Token's owner.
+    /// @return tokenOwner Token's owner.
     function getOwner(
         string calldata colorhex
-    ) external view returns (address) {
+    ) external view returns (address tokenOwner) {
         uint tokenId = validateColorhexAndGetId(colorhex); // gets tokenId
-        return _getOwner(tokenId);
+        tokenOwner = _getOwner(tokenId);
     }
 
-    // TODO: consider declaring & using named returns, then not explicitly returning
-    function _getOwner(uint tokenId) internal view returns (address) {
-        return ownerOf(tokenId); // gets token's owner (first ensures token exists)
+    // DONE: consider declaring & using named returns, then not explicitly returning
+    function _getOwner(
+        uint tokenId
+    ) internal view returns (address tokenOwner) {
+        tokenOwner = ownerOf(tokenId); // gets token's owner (first ensures token exists)
     }
 
     /// @notice Changes a token's owner.
@@ -210,7 +230,7 @@ contract PeachV09 is
     /// @param newOwner Token's new owner.
     function modOwner(string calldata colorhex, address newOwner) external {
         uint tokenId = validateColorhexAndGetId(colorhex); // gets tokenId
-        require(newOwner != address(this), "Contract cannot own a token.");
+        if (newOwner == address(this)) revert ProxyContractCannotBeTokenOwner();
         _modOwner(tokenId, newOwner);
     }
 
@@ -218,22 +238,24 @@ contract PeachV09 is
         _safeTransfer(msg.sender, newOwner, tokenId); // gives token (first ensures token exists and is owned)
     }
 
-    // TODO: consider declaring & using named returns, then not explicitly returning
+    // DONE: consider declaring & using named returns, then not explicitly returning
     /// @notice Retrieves a color's name.
     /// @dev Validates colorhex, then passes to a private function to actually do it.
     /// @param colorhex Color's 6-digit hexadecimal representation.
-    /// @return Color's name.
+    /// @return tokenName Color's name.
     function getName(
         string calldata colorhex
-    ) external view returns (string memory) {
+    ) external view returns (string memory tokenName) {
         uint tokenId = validateColorhexAndGetId(colorhex); // gets tokenId
-        require(_getOwner(tokenId) != address(0), "token doesn't exist"); // token exists
-        return _getName(tokenId);
+        if (_getOwner(tokenId) == address(0)) revert TokenDNE();
+        tokenName = _getName(tokenId);
     }
 
-    // TODO: consider declaring & using named returns, then not explicitly returning
-    function _getName(uint tokenId) internal view returns (string memory) {
-        return _names[tokenId]; // gets token's name
+    // DONE: consider declaring & using named returns, then not explicitly returning
+    function _getName(
+        uint tokenId
+    ) internal view returns (string memory tokenName) {
+        tokenName = _names[tokenId]; // gets token's name
     }
 
     /// @notice Changes a color's name.
@@ -245,7 +267,7 @@ contract PeachV09 is
         string calldata newName
     ) external {
         uint tokenId = validateColorhexAndGetId(colorhex); // gets tokenId
-        require(bytes(newName).length < 33, "name too long"); // onlyValidName: max length: 24 characters
+        if (bytes(newName).length > 32) revert InvalidTokenName();
         _modName(tokenId, newName);
     }
 
@@ -258,32 +280,35 @@ contract PeachV09 is
         emit Rename(oldName, newName, tokenId);
     }
 
-    // TODO: consider declaring & using named returns, then not explicitly returning
+    // DONE: consider declaring & using named returns, then not explicitly returning
     /// @notice Retrieves a token's picture.
     /// @dev Validates colorhex, then passes to a private function to actually do it.
     /// @param colorhex Color's 6-digit hexadecimal representation.
-    /// @return Token's metadata, which includes a SVG-coded picture.
+    /// @return tokenPic Token's metadata, which includes a SVG-coded picture.
     function getPic(
         string calldata colorhex
-    ) external view returns (string memory) {
+    ) external view returns (string memory tokenPic) {
         uint tokenId = validateColorhexAndGetId(colorhex); // gets tokenId
-        require(_getOwner(tokenId) != address(0), "token doesn't exist"); // onlyExistentToken: token owner is not the burn address
-        return _getPic(tokenId);
+        if (_getOwner(tokenId) == address(0)) revert TokenDNE();
+        tokenPic = _getPic(tokenId);
     }
 
-    // TODO: consider declaring & using named returns, then not explicitly returning
-    function _getPic(uint tokenId) internal view returns (string memory) {
-        return tokenURI(tokenId); // gets token's pic
+    // DONE: consider declaring & using named returns, then not explicitly returning
+    // TODO: move pic-making from tokenURI to _getPic()
+    function _getPic(
+        uint tokenId
+    ) internal view returns (string memory tokenPic) {
+        tokenPic = tokenURI(tokenId); // gets token's pic
     }
 
     modifier onlyTokenOwner(uint tokenId) {
-        require(_getOwner(tokenId) == msg.sender, "not the owner"); // token owner is current user
+        if (_getOwner(tokenId) != msg.sender) revert NotTokenOwner();
         _;
     }
 
-    // TODO: consider declaring & using named returns, then not explicitly returning
+    // DONE: consider declaring & using named returns, then not explicitly returning
+    // DONE: set a var to be bytes(colorhex) so not repeatedly calling a string memory
     // TODO: change "* 16 ** i" into using bit shifting
-    // TODO: set a var to be bytes(colorhex) so not repeatedly calling a string memory
     // TODO: this is the function to optimize the most: called all the time!
     // TODO: get function title to have lowest selector number, so less run-t gas in finding it
     // TODO: consider unchecked {}
@@ -295,11 +320,13 @@ contract PeachV09 is
         string calldata colorhex
     ) public pure returns (uint n) {
         // decimal number 'n' is birthed, to be constructed, then returned
-        require(bytes(colorhex).length == 6, "improper size");
+        bytes memory colorhexBytes = bytes(colorhex); // so not repeatedly converting in for loop
+        // if (bytes(colorhex).length != 6) revert InvalidColorhex();
+        if (colorhexBytes.length != 6) revert InvalidColorhex();
         // color-hexadecimal number is iterated through, but starting with lowest numeral
         for (uint i; i < 6; ++i) {
             // hexadecimal numeral is represented as its place (0-127) within the ASCII character mapping
-            uint a = uint8(bytes(colorhex)[5 - i]);
+            uint a = uint8(colorhexBytes[5 - i]);
             // ASCII 0-9: decimal 0-9
             if (a > 47 && a < 58) {
                 n += (a - 48) * (16 ** i);
@@ -314,50 +341,53 @@ contract PeachV09 is
             }
             // incoming string was not completely made of ASCII characters mapping to valid hexadecimal numerals
             else {
-                revert("Invalid color-hex string.");
+                revert InvalidColorhex();
             }
         }
         // decimal number is the sum of the hexadecimal values in the hexadecimal number system's places (units, 16's, 256's, etc., instead of units, 10's, 100's, etc.)
 
         // ...next line should probably be an 'assert', since it is critical internal logic
         // require(n < 16777216, "too large tokenId"); // just should NOT happen, based on above construction
-        assert(n < 16777216);
-        return n;
+        // assert(n < 16777216);
+        if (n > 16777215) revert InvalidTokenId();
+        // return n;
     }
 
-    // TODO: optimizing this, but it seems to only be used by tokenURI
+    // DONE: consider declaring & using named returns, then not explicitly returning
+    // DONE: optimizing this, but it seems to only be used by tokenURI
     // TODO: consider using "bitwise and" i/o "modulo"
-    // TODO: consider declaring & using named returns, then not explicitly returning
     // TODO: consider unchecked {}
     /// @notice Converts a token's tokenId into its colorhex: the color's 6-digit hexadecimal code.
     /// @dev Validates and converts a tokenId decimal integer into a hexadecimal string: the colorhex.
     /// @param n Color's tokenId.
-    /// @return Color's 6-digit hexadecimal representation.
-    function getColorhex(uint n) public pure returns (string memory) {
-        require(n < 16777216, "too big number");
-        bytes memory colorhex = new bytes(6); // color-hexadecimal number is one size
+    /// @return colorhex Color's 6-digit hexadecimal representation.
+    function getColorhex(uint n) public pure returns (string memory colorhex) {
+        if (n > 16777215) revert InvalidTokenId();
+        bytes memory colorhexBytes = new bytes(6); // color-hexadecimal number is one size
         for (uint i = 1; i < 7; ++i) {
             // color-hexadecimal number is constructed, but starting with lowest numeral
-            colorhex[6 - i] = _HEX_SYMBOLS[n % (1 << 4)]; // convert the decimal number's 4 rightmost bits into a hexadecimal numeral, then store in correct place
+            colorhexBytes[6 - i] = _HEX_SYMBOLS[n % (1 << 4)]; // convert the decimal number's 4 rightmost bits into a hexadecimal numeral, then store in correct place
             n >>= 4; // shift the decimal number rightwards by 4 bits, allowing subsequent conversions of decimal number's 4 rightmost bits to a hexadecimal numeral
         }
-        assert(colorhex.length == 6);
-        return string(colorhex); // color-hexadecimal number is actually a string, which is a stringing together of the correctly placed hexadecimal numerals
+        // assert(colorhex.length == 6);
+        if (colorhexBytes.length != 6) revert InvalidColorhex();
+        colorhex = string(colorhexBytes); // color-hexadecimal number is actually a string, which is a stringing together of the correctly placed hexadecimal numerals
     }
 
+    // DONE: consider declaring & using named returns, then not explicitly returning
+    // TODO: move pic-making from tokenURI to _getPic()
     // TODO: switch from string array to group of strings, e.g., per an Appleseed version
     // TODO: save pre-cal'd values (some SVG code strings) as constants
     // TODO: reduce casting from bytes to string to bytes again, unnecessarily
-    // TODO: consider declaring & using named returns, then not explicitly returning
     // TODO: skip using intermediate variables
     /// @notice Retrieves a token's URI.
     /// @dev Makes the JSON, which contains the name, description, and picture (an SVG), all on-chain.
     /// @param tokenId Color's tokenId.
-    /// @return Token's metadata, which includes a SVG-coded picture.
+    /// @return tokenUri Token's metadata, which includes a SVG-coded picture.
     function tokenURI(
         uint256 tokenId
-    ) public view override returns (string memory) {
-        require(tokenId < 16777216, "too big number");
+    ) public view override returns (string memory tokenUri) {
+        if (tokenId > 16777215) revert InvalidTokenId();
         string memory name = _getName(tokenId);
         string memory colorhex = getColorhex(tokenId);
         string[7] memory parts;
@@ -398,9 +428,8 @@ contract PeachV09 is
                 )
             )
         );
-        output = string(
+        tokenUri = string(
             abi.encodePacked("data:application/json;base64,", json)
         );
-        return output;
     }
 }
