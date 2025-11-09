@@ -28,6 +28,14 @@ contract PeachV10 is
     // Base price per token.
     uint private constant _MINTPRICE = 0.001 ether;
 
+    string private constant _SVG_PART_1 =
+        '<svg xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMinYMin meet" viewBox="0 0 350 350"><style>.base { fill: white; font-family: serif; font-size: 14px; }</style><rect width="100%" height="100%" fill="black" /><text x="50%" y="16" text-anchor="middle" rotate="180" style="fill: black; font-size: 35px;">&#9814;</text><text x="50%" y="320" text-anchor="middle" class="base">';
+    string private constant _SVG_PART_2 =
+        '</text><text x="50%" y="337" text-anchor="middle" class="base">#';
+    string private constant _SVG_PART_3 =
+        '</text><rect x="50" y="50" width="250" height="250" fill="#';
+    string private constant _SVG_PART_4 = '" /></svg>';
+
     /// @notice Logs the change to the custom string per unique tokenId.
     event Rename(
         string indexed oldName,
@@ -47,8 +55,6 @@ contract PeachV10 is
     error InvalidTokenName();
 
     error NotTokenOwner();
-
-    error TokenDNE();
 
     error ProxyContractCannotBeTokenOwner();
 
@@ -123,7 +129,7 @@ contract PeachV10 is
         string calldata colorhex,
         string calldata name
     ) external payable {
-        uint tokenId = validateColorhexAndGetId(colorhex); // gets tokenId
+        uint tokenId = aGetId(colorhex); // gets tokenId
         if (bytes(name).length > 32) revert InvalidTokenName();
         if (tokenId == 0 || tokenId == 16777215) {
             // extra premium pricing for: black, white
@@ -195,7 +201,7 @@ contract PeachV10 is
     /// @dev Validates colorhex, then passes to a private function to actually do it.
     /// @param colorhex Color's 6-digit hexadecimal representation.
     function nixToken(string calldata colorhex) external {
-        uint tokenId = validateColorhexAndGetId(colorhex); // gets tokenId
+        uint tokenId = aGetId(colorhex); // gets tokenId
         _nixToken(tokenId);
     }
 
@@ -213,7 +219,7 @@ contract PeachV10 is
     function getOwner(
         string calldata colorhex
     ) external view returns (address tokenOwner) {
-        uint tokenId = validateColorhexAndGetId(colorhex); // gets tokenId
+        uint tokenId = aGetId(colorhex); // gets tokenId
         tokenOwner = _getOwner(tokenId);
     }
 
@@ -229,7 +235,7 @@ contract PeachV10 is
     /// @param colorhex Color's 6-digit hexadecimal representation.
     /// @param newOwner Token's new owner.
     function modOwner(string calldata colorhex, address newOwner) external {
-        uint tokenId = validateColorhexAndGetId(colorhex); // gets tokenId
+        uint tokenId = aGetId(colorhex); // gets tokenId
         if (newOwner == address(this)) revert ProxyContractCannotBeTokenOwner();
         _modOwner(tokenId, newOwner);
     }
@@ -246,8 +252,8 @@ contract PeachV10 is
     function getName(
         string calldata colorhex
     ) external view returns (string memory tokenName) {
-        uint tokenId = validateColorhexAndGetId(colorhex); // gets tokenId
-        if (_getOwner(tokenId) == address(0)) revert TokenDNE();
+        uint tokenId = aGetId(colorhex); // gets tokenId
+        if (_getOwner(tokenId) == address(0)) revert InvalidTokenId(); // DNE
         tokenName = _getName(tokenId);
     }
 
@@ -266,7 +272,7 @@ contract PeachV10 is
         string calldata colorhex,
         string calldata newName
     ) external {
-        uint tokenId = validateColorhexAndGetId(colorhex); // gets tokenId
+        uint tokenId = aGetId(colorhex); // gets tokenId
         if (bytes(newName).length > 32) revert InvalidTokenName();
         _modName(tokenId, newName);
     }
@@ -280,68 +286,44 @@ contract PeachV10 is
         emit Rename(oldName, newName, tokenId);
     }
 
-    // DONE: consider declaring & using named returns, then not explicitly returning
-    /// @notice Retrieves a token's picture.
-    /// @dev Validates colorhex, then passes to a private function to actually do it.
-    /// @param colorhex Color's 6-digit hexadecimal representation.
-    /// @return tokenPic Token's metadata, which includes a SVG-coded picture.
-    function getPic(
-        string calldata colorhex
-    ) external view returns (string memory tokenPic) {
-        uint tokenId = validateColorhexAndGetId(colorhex); // gets tokenId
-        if (_getOwner(tokenId) == address(0)) revert TokenDNE();
-        tokenPic = _getPic(tokenId);
-    }
-
-    // DONE: consider declaring & using named returns, then not explicitly returning
-    // TODO: move pic-making from tokenURI to _getPic()
-    function _getPic(
-        uint tokenId
-    ) internal view returns (string memory tokenPic) {
-        tokenPic = tokenURI(tokenId); // gets token's pic
-    }
-
     modifier onlyTokenOwner(uint tokenId) {
         if (_getOwner(tokenId) != msg.sender) revert NotTokenOwner();
         _;
     }
 
+    // NOTE: this is the function to optimize the most: called all the time!
+    // TODO: learn & use bit operations i/o arithmatic
     // DONE: consider declaring & using named returns, then not explicitly returning
     // DONE: set a var to be bytes(colorhex) so not repeatedly calling a string memory
-    // TODO: change "* 16 ** i" into using bit shifting
-    // TODO: this is the function to optimize the most: called all the time!
-    // TODO: get function title to have lowest selector number, so less run-t gas in finding it
-    // TODO: consider unchecked {}
+    // DONE: change "* 16 ** i" into using bit shifting
+    // DONE: get function title to have lowest selector number, so less run-t gas in finding it
+    // DONE: consider unchecked {}
     /// @notice Converts a color's colorhex into its tokenId: the token's internal ID.
     /// @dev Validates and converts a colorhex hexadecimal string into a decimal integer: the tokenId.
     /// @param colorhex Color's 6-digit hexadecimal representation.
     /// @return n Color's tokenId.
-    function validateColorhexAndGetId(
-        string calldata colorhex
-    ) public pure returns (uint n) {
+    function aGetId(string calldata colorhex) public pure returns (uint n) {
         // decimal number 'n' is birthed, to be constructed, then returned
-        bytes memory colorhexBytes = bytes(colorhex); // so not repeatedly converting in for loop
+        bytes calldata colorhexBytes = bytes(colorhex); // so not repeatedly converting in for loop
         // if (bytes(colorhex).length != 6) revert InvalidColorhex();
         if (colorhexBytes.length != 6) revert InvalidColorhex();
         // color-hexadecimal number is iterated through, but starting with lowest numeral
-        for (uint i; i < 6; ++i) {
+        for (uint i; i < 6; ) {
             // hexadecimal numeral is represented as its place (0-127) within the ASCII character mapping
             uint a = uint8(colorhexBytes[5 - i]);
             // ASCII 0-9: decimal 0-9
-            if (a > 47 && a < 58) {
-                n += (a - 48) * (16 ** i);
-            }
-            // ASCII A-F: decimal 10-15
-            else if (a > 64 && a < 71) {
-                n += (a - 55) * (16 ** i);
-            }
-            // ASCII a-f: decimal 10-15
-            else if (a > 96 && a < 103) {
-                n += (a - 87) * (16 ** i);
-            }
-            // incoming string was not completely made of ASCII characters mapping to valid hexadecimal numerals
-            else {
-                revert InvalidColorhex();
+            unchecked {
+                // Combine ASCII ranges: 0-9 (48-57), A-F (65-70), a-f (97-102)
+                if (a > 47 && a < 58) {
+                    n += (a - 48) << (4 * i);
+                } else if (a > 64 && a < 71) {
+                    n += (a - 55) << (4 * i);
+                } else if (a > 96 && a < 103) {
+                    n += (a - 87) << (4 * i);
+                } else {
+                    revert InvalidColorhex();
+                }
+                ++i;
             }
         }
         // decimal number is the sum of the hexadecimal values in the hexadecimal number system's places (units, 16's, 256's, etc., instead of units, 10's, 100's, etc.)
@@ -355,8 +337,8 @@ contract PeachV10 is
 
     // DONE: consider declaring & using named returns, then not explicitly returning
     // DONE: optimizing this, but it seems to only be used by tokenURI
-    // TODO: consider using "bitwise and" i/o "modulo"
-    // TODO: consider unchecked {}
+    // DONE: consider using "bitwise and" i/o "modulo"
+    // DONE: consider unchecked {}
     /// @notice Converts a token's tokenId into its colorhex: the color's 6-digit hexadecimal code.
     /// @dev Validates and converts a tokenId decimal integer into a hexadecimal string: the colorhex.
     /// @param n Color's tokenId.
@@ -364,10 +346,13 @@ contract PeachV10 is
     function getColorhex(uint n) public pure returns (string memory colorhex) {
         if (n > 16777215) revert InvalidTokenId();
         bytes memory colorhexBytes = new bytes(6); // color-hexadecimal number is one size
-        for (uint i = 1; i < 7; ++i) {
+        for (uint i = 1; i < 7; ) {
             // color-hexadecimal number is constructed, but starting with lowest numeral
-            colorhexBytes[6 - i] = _HEX_SYMBOLS[n % (1 << 4)]; // convert the decimal number's 4 rightmost bits into a hexadecimal numeral, then store in correct place
+            colorhexBytes[6 - i] = _HEX_SYMBOLS[n & 0xF]; // convert the decimal number's 4 rightmost bits into a hexadecimal numeral using bitwise AND
             n >>= 4; // shift the decimal number rightwards by 4 bits, allowing subsequent conversions of decimal number's 4 rightmost bits to a hexadecimal numeral
+            unchecked {
+                ++i;
+            }
         }
         // assert(colorhex.length == 6);
         if (colorhexBytes.length != 6) revert InvalidColorhex();
@@ -375,11 +360,11 @@ contract PeachV10 is
     }
 
     // DONE: consider declaring & using named returns, then not explicitly returning
-    // TODO: move pic-making from tokenURI to _getPic()
-    // TODO: switch from string array to group of strings, e.g., per an Appleseed version
-    // TODO: save pre-cal'd values (some SVG code strings) as constants
-    // TODO: reduce casting from bytes to string to bytes again, unnecessarily
-    // TODO: skip using intermediate variables
+    // NOPE: move pic-making from tokenURI to _getPic()
+    // DONE: switch from string array to group of strings, e.g., per an Appleseed version
+    // DONE: save pre-cal'd values (some SVG code strings) as constants
+    // DONE: reduce casting from bytes to string to bytes again, unnecessarily
+    // NOPE: skip using intermediate variables
     /// @notice Retrieves a token's URI.
     /// @dev Makes the JSON, which contains the name, description, and picture (an SVG), all on-chain.
     /// @param tokenId Color's tokenId.
@@ -388,48 +373,40 @@ contract PeachV10 is
         uint256 tokenId
     ) public view override returns (string memory tokenUri) {
         if (tokenId > 16777215) revert InvalidTokenId();
+
         string memory name = _getName(tokenId);
         string memory colorhex = getColorhex(tokenId);
-        string[7] memory parts;
-        parts[
-            0
-        ] = '<svg xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMinYMin meet" viewBox="0 0 350 350"><style>.base { fill: white; font-family: serif; font-size: 14px; }</style><rect width="100%" height="100%" fill="black" /><text x="50%" y="16" text-anchor="middle" rotate="180" style="fill: black; font-size: 35px;">&#9814;</text><text x="50%" y="320" text-anchor="middle" class="base">';
-        parts[1] = name;
-        parts[
-            2
-        ] = '</text><text x="50%" y="337" text-anchor="middle" class="base">#';
-        parts[3] = colorhex;
-        parts[
-            4
-        ] = '</text><rect x="50" y="50" width="250" height="250" fill="#';
-        parts[5] = colorhex;
-        parts[6] = '" /></svg>';
-        string memory output = string(
-            abi.encodePacked(
-                parts[0],
-                parts[1],
-                parts[2],
-                parts[3],
-                parts[4],
-                parts[5],
-                parts[6]
-            )
+
+        // Pack SVG parts directly into bytes
+        bytes memory svgBytes = abi.encodePacked(
+            _SVG_PART_1,
+            name,
+            _SVG_PART_2,
+            colorhex,
+            _SVG_PART_3,
+            colorhex,
+            _SVG_PART_4
         );
-        string memory json = Base64.encode(
-            bytes(
-                string(
-                    abi.encodePacked(
-                        '{"name": "',
-                        name,
-                        '", "description": "a rockopera color for onchain art", "image": "data:image/svg+xml;base64,',
-                        Base64.encode(bytes(output)),
-                        '"}'
-                    )
-                )
-            )
+
+        // Base64 encode the SVG bytes
+        string memory encodedSvg = Base64.encode(svgBytes);
+
+        // Create and encode the JSON directly
+        bytes memory jsonBytes = abi.encodePacked(
+            '{"name": "',
+            name,
+            '", "description": "a rockopera color for onchain art", "image": ',
+            '"data:image/svg+xml;base64,',
+            encodedSvg,
+            '"}'
         );
+
+        // Base64 encode the JSON and create the final URI
         tokenUri = string(
-            abi.encodePacked("data:application/json;base64,", json)
+            abi.encodePacked(
+                "data:application/json;base64,",
+                Base64.encode(jsonBytes)
+            )
         );
     }
 }

@@ -260,5 +260,5 @@ npx hardhat verify --network sepolia PROXY_ADDRESS
 / shift checks from internal to external functions
 / use custom errors
 
-- if can, use bytes32 (fixed, 20% gas) i/o string (unbounded)
 - higher # of runs by optimizer: higher deployment cost & lower runtime cost
+- if can, use bytes32 (fixed, 20% gas) i/o string (unbounded)
