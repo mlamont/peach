@@ -77,7 +77,7 @@ contract PeachV10 is
         __UUPSUpgradeable_init();
     }
 
-    // TODO: use as constant: bytes32(uint256(keccak256("eip1967.proxy.upgradeabilityEnded")) - 1)
+    // NOPE: use as constant: bytes32(uint256(keccak256("eip1967.proxy.upgradeabilityEnded")) - 1)
     /// @notice Ends the upgradeability of the contract, non-reversably.
     /// @dev Only the contract owner can do this.
     function endUpgradeability() external onlyOwner {
@@ -92,7 +92,7 @@ contract PeachV10 is
         emit UpgradeabilityEnded(msg.sender);
     }
 
-    // TODO: use as constant: bytes32(uint256(keccak256("eip1967.proxy.upgradeabilityEnded")) - 1)
+    // NOPE: use as constant: bytes32(uint256(keccak256("eip1967.proxy.upgradeabilityEnded")) - 1)
     /// @notice Has upgradeability ended?
     /// @return True for ended upgradeability, False for not ended.
     function upgradeabilityEnded() public view returns (bool) {
