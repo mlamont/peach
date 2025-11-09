@@ -259,6 +259,5 @@ npx hardhat verify --network sepolia PROXY_ADDRESS
 / shift from "onlyOwnerOf" to "onlyColorOwner"
 / shift checks from internal to external functions
 / use custom errors
-
-- higher # of runs by optimizer: higher deployment cost & lower runtime cost
-- if can, use bytes32 (fixed, 20% gas) i/o string (unbounded)
+x if can, use bytes32 (fixed, 20% gas) i/o string (unbounded)... would require redeploy, changing OpenSea exp'ce
+/ higher # of runs by optimizer: higher deployment cost & lower runtime cost (need to test for optimal # of runs)

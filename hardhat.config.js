@@ -7,7 +7,15 @@ require("dotenv").config();
 const PRIVATE_KEY = process.env.PRIVATE_KEY;
 
 module.exports = {
-  solidity: "0.8.28",
+  solidity: {
+    version: "0.8.28",
+    settings: {
+      optimizer: {
+        enabled: true,
+        runs: 1000,
+      },
+    },
+  },
   networks: {
     mainnet: {
       // url: `https://eth-mainnet.g.alchemy.com/v2/${process.env.alchemyApiKey}`,
