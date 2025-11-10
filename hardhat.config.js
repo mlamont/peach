@@ -3,6 +3,7 @@ require("@nomicfoundation/hardhat-ethers");
 require("@nomicfoundation/hardhat-verify");
 require("@openzeppelin/hardhat-upgrades");
 require("dotenv").config();
+require("@nomicfoundation/hardhat-chai-matchers");
 
 const PRIVATE_KEY = process.env.PRIVATE_KEY;
 
