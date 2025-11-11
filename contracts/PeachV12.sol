@@ -254,7 +254,7 @@ contract PeachV12 is
         string calldata colorhex
     ) external view returns (string memory tokenName) {
         uint tokenId = aGetId(colorhex); // gets tokenId
-        if (_getOwner(tokenId) == address(0)) revert InvalidTokenId(); // DNE
+        if (_ownerOf(tokenId) == address(0)) revert InvalidTokenId(); // DNE
         tokenName = _getName(tokenId);
     }
 

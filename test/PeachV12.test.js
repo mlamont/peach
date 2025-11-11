@@ -1,4 +1,5 @@
 const { expect } = require("chai"); // being explicit about a dependency
+const { ethers, upgrades } = require("hardhat");
 
 describe("A metaversal artist who wants to MINT (create tokens)", function () {
   let peach; // Declare peach here so it's accessible in all tests
@@ -226,6 +227,9 @@ describe("A metaversal artist who wants to GIVE (modify token owner)", function 
     // try to give your own token to an invalid address
     await orange.setToken("000001", "ineffably blue", { value: mintPayment });
     await expect(orange.modOwner("000001", invalidAddress)).to.be.rejected;
+    await expect(
+      orange.modOwner("000001", await orange.getAddress())
+    ).to.be.revertedWithCustomError(orange, "ProxyContractCannotBeTokenOwner");
   });
 
   it("can not give an existing yet unowned token", async function () {
@@ -540,7 +544,25 @@ describe("An administrator who wants to ADMINISTER this contract", function () {
     await orange.waitForDeployment(); // wait for deployment completion
   });
 
+  /*
+  it("can send funds on purpose", async function () {
+    // exercise the receive() function
+    // (bool success, ) = owner().call{value: balanceOfThisContract}(""); // call() doesn't require owner() wrapped in payable()
+    // if (!success) revert WithdrawalFailed();
+  });
+
+  it("can send funds by mistake", async function () {
+    // exercise the fallback() function
+    // (bool success, ) = owner().call{value: balanceOfThisContract}(""); // call() doesn't require owner() wrapped in payable()
+    // if (!success) revert WithdrawalFailed();
+  });
+  */
+
   it("can extract funds collected after numerous mints", async function () {
+    await expect(orange.withdraw()).to.be.revertedWithCustomError(
+      orange,
+      "NothingToWithdraw"
+    ); // attempting withdraw of nothing
     // mint, get owner balance before & after withdrawal, compare that difference to mint payment
     await orange
       .connect(friend)
@@ -549,7 +571,7 @@ describe("An administrator who wants to ADMINISTER this contract", function () {
       .connect(stranger)
       .setToken("000004", "off-off-black", { value: mintPayment }); // more minting!
     const orangeBalancePostMint = await ethers.provider.getBalance(
-      orange.getAddress()
+      await orange.getAddress()
     );
     // console.log(ethers.formatEther(orangeBalancePostMint)); // print that
     await expect(orange.connect(villain).withdraw()).to.be.rejected; // non-owner tries withdrawing
@@ -564,6 +586,27 @@ describe("An administrator who wants to ADMINISTER this contract", function () {
     expect(await roundedOwnerBalanceDiffInEth.toString()).to.equal(
       ethers.formatEther(orangeBalancePostMint)
     ); // comparing!
+  });
+
+  it("can see if upgradeability has ended", async function () {
+    expect(await orange.upgradeabilityEnded()).to.equal(false);
+  });
+
+  it("can end upgradeability", async function () {
+    await expect(orange.connect(villain).endUpgradeability()).to.be.rejected; // non-owner tries ending upgradeability
+    await expect(orange.connect(owner).endUpgradeability()).to.not.be.rejected; // owner ends upgradeability
+    expect(await orange.upgradeabilityEnded()).to.equal(true);
+  });
+
+  it("can upgrade the contract", async function () {
+    expect(await orange.upgradeabilityEnded()).to.equal(false);
+    const PrevPeach = await ethers.getContractFactory("PeachV11");
+    await upgrades.upgradeProxy(await orange.getAddress(), PrevPeach);
+    await orange.endUpgradeability();
+    expect(await orange.upgradeabilityEnded()).to.equal(true);
+    await expect(
+      upgrades.upgradeProxy(await orange.getAddress(), Orange)
+    ).to.be.rejectedWith("Contract is not upgradeable");
   });
 });
 
