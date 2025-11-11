@@ -1,6 +1,8 @@
 const { expect } = require("chai"); // being explicit about a dependency
 
 describe("A metaversal artist who wants to MINT (create tokens)", function () {
+  let peach; // Declare peach here so it's accessible in all tests
+
   before(async function () {
     // setup for this 'describe' block
     Peach = await ethers.getContractFactory("PeachV12"); // get deployable contract
@@ -23,7 +25,6 @@ describe("A metaversal artist who wants to MINT (create tokens)", function () {
       gasLimit: 5000000,
     });
     await peach.waitForDeployment();
-    console.log("Peach deployed to:", await peach.getAddress()); // (PPP)
   });
 
   it("can create a new token", async function () {
@@ -66,18 +67,20 @@ describe("A metaversal artist who wants to MINT (create tokens)", function () {
       })
     ).to.not.be.rejected; // max length
   });
-  /*
+
   it("can not create an already existing token", async function () {
     // try minting at a token-ID you just minted at
-    await peach.setToken("000001", "ineffably blue");
+    await peach.setToken("000001", "ineffably blue", { value: mintPayment });
     await expect(peach.setToken("000001", "still blue")).to.be.rejected;
   });
 
-  it("can not create an already burned token", async function () {
+  it("can create an already burned token", async function () {
     // try minting at a burned token-ID, and it works, and it's OK
-    await peach.setToken("000001", "ineffably blue");
+    await peach.setToken("000001", "ineffably blue", { value: mintPayment });
     await peach.nixToken("000001");
-    await peach.connect(friend).setToken("000001", "wicked dark blue");
+    await peach
+      .connect(friend)
+      .setToken("000001", "wicked dark blue", { value: mintPayment });
     expect(await peach.getOwner("000001")).to.equal(friend);
     expect(await peach.getName("000001")).to.equal("wicked dark blue");
   });
@@ -101,30 +104,40 @@ describe("A metaversal artist who wants to MINT (create tokens)", function () {
       peach
         .connect(friend)
         .setToken("000003", "off-black", { value: mintUnderPayment })
-    ).to.be.rejectedWith("Insufficient payment.");
+    ).to.be.revertedWithCustomError(peach, "NeedMoreFundsForThisColor");
     await expect(peach.getOwner("000003")).to.be.rejected;
   });
-  */
 });
 
-/*
 describe("A metaversal artist who wants to BURN (destroy tokens)", function () {
+  let orange;
+
   before(async function () {
     // setup for this 'describe' block
-    Orange = await ethers.getContractFactory("Orange"); // get deployable contract
+    Orange = await ethers.getContractFactory("PeachV12"); // get deployable contract
     zeroAddress = "0x0000000000000000000000000000000000000000";
+    // mintUnderPayment = ethers.parseEther("0.0001");
+    mintPayment = ethers.parseEther("0.001");
+    // mintOverPayment = ethers.parseEther("0.01");
+    // mintSuperPayment = ethers.parseEther("1");
+    mintSuperDuperPayment = ethers.parseEther("10");
   });
 
   beforeEach(async function () {
     // setup for each 'it' block
-    orange = await Orange.deploy(); // deploy contract
-    await orange.waitForDeployment(); // wait for deployment completion
     [owner, friend, stranger] = await ethers.getSigners(); // get list of ETH accounts, 1st is deployer
+    orange = await upgrades.deployProxy(Orange, [owner.address], {
+      initializer: "initialize",
+      kind: "uups",
+      timeout: 120000,
+      gasLimit: 5000000,
+    });
+    await orange.waitForDeployment(); // wait for deployment completion
   });
 
   it("can destroy an owned token", async function () {
     // destroy a token you own
-    await orange.setToken("000001", "ineffably blue");
+    await orange.setToken("000001", "ineffably blue", { value: mintPayment });
     expect(await orange.getName("000001")).to.equal("ineffably blue");
     await orange.nixToken("000001");
     await expect(orange.getOwner("000001")).to.be.rejected; // checking burned token is ownerless
@@ -133,21 +146,21 @@ describe("A metaversal artist who wants to BURN (destroy tokens)", function () {
 
   it("can not destroy an existing yet unowned token", async function () {
     // try to destroy a token belonging to someone else
-    await orange.setToken("000001", "ineffably blue");
+    await orange.setToken("000001", "ineffably blue", { value: mintPayment });
     await expect(orange.connect(friend).nixToken("000001")).to.be.rejected;
   });
 
   it("can not destroy a badly ID'd token", async function () {
     // try burning with a bad token-ID
-    await orange.setToken("FFFFFF", "white");
+    await orange.setToken("FFFFFF", "white", { value: mintSuperDuperPayment });
     expect(await orange.getName("FFFFFF")).to.be.equal("white"); // highest token-ID
     await expect(orange.nixToken("")).to.be.rejected; // too short
-    await expect(orange.nixToken()).to.be.rejected; // empty input
+    await expect(orange.nixToken({})).to.be.rejected; // empty input
   });
 
   it("can not destroy an already burned token", async function () {
     // try burning a token, then burning it again
-    await orange.setToken("000001", "ineffably blue");
+    await orange.setToken("000001", "ineffably blue", { value: mintPayment });
     await orange.nixToken("000001");
     await expect(orange.nixToken("000001")).to.be.rejected;
   });
@@ -157,62 +170,67 @@ describe("A metaversal artist who wants to BURN (destroy tokens)", function () {
     await expect(orange.getOwner("000001")).to.be.rejected;
     await expect(orange.nixToken("000001")).to.be.rejected;
   });
-
-  // it("can not destroy a token without enough funds to do so");
 });
 
 describe("A metaversal artist who wants to GIVE (modify token owner)", function () {
+  let orange;
+
   before(async function () {
     // setup for this 'describe' block
-    Orange = await ethers.getContractFactory("Orange"); // get deployable contract
+    Orange = await ethers.getContractFactory("PeachV12"); // get deployable contract
     zeroAddress = "0x0000000000000000000000000000000000000000";
     invalidAddress = "0x00000000000000000000000000po_op0000000000";
+    mintPayment = ethers.parseEther("0.001");
   });
 
   beforeEach(async function () {
     // setup for each 'it' block
-    orange = await Orange.deploy(); // deploy contract
-    await orange.waitForDeployment(); // wait for deployment completion
     [owner, friend, stranger] = await ethers.getSigners(); // get list of ETH accounts, 1st is deployer
+    orange = await upgrades.deployProxy(Orange, [owner.address], {
+      initializer: "initialize",
+      kind: "uups",
+      timeout: 120000,
+      gasLimit: 5000000,
+    });
+    await orange.waitForDeployment(); // wait for deployment completion
   });
 
   it("can give an owned token to a separate and valid address", async function () {
     // transfer your own token to a friend
-    await orange.setToken("000001", "ineffably blue");
+    await orange.setToken("000001", "ineffably blue", { value: mintPayment });
     await orange.modOwner("000001", friend);
     expect(await orange.getOwner("000001")).to.equal(friend);
   });
 
   it("can no longer see the given token as owned", async function () {
     // transfer it to a friend, then see if you still own it
-    await orange.setToken("000001", "ineffably blue");
+    await orange.setToken("000001", "ineffably blue", { value: mintPayment });
     await orange.modOwner("000001", friend);
     expect(await orange.getOwner("000001")).to.not.equal(owner);
   });
 
-  it("can not give an owned token back to themselves", async function () {
-    // transfer a token to yourself, a useless talk that seems OK
-    await orange.setToken("000001", "ineffably blue");
+  it("can give an owned token back to themselves", async function () {
+    // transfer a token to yourself, a useless task that seems OK
+    await orange.setToken("000001", "ineffably blue", { value: mintPayment });
     await orange.modOwner("000001", owner);
     expect(await orange.getOwner("000001")).to.equal(owner);
   });
 
   it("can not give an owned token to the burn address", async function () {
     // try to give your own token to be destroyed
-    await orange.setToken("000001", "ineffably blue");
+    await orange.setToken("000001", "ineffably blue", { value: mintPayment });
     await expect(orange.modOwner("000001", zeroAddress)).to.be.rejected;
   });
 
   it("can not give an owned token to an otherwise invalid address", async function () {
     // try to give your own token to an invalid address
-    await orange.setToken("000001", "ineffably blue");
-    await expect(orange.modOwner("000001")).to.be.rejected;
-    // await expect(orange._modOwner(1)).to.be.rejected;
+    await orange.setToken("000001", "ineffably blue", { value: mintPayment });
+    await expect(orange.modOwner("000001", invalidAddress)).to.be.rejected;
   });
 
   it("can not give an existing yet unowned token", async function () {
     // try to give a token, which belongs to someone else, to yet someone else
-    await orange.setToken("000001", "ineffably blue");
+    await orange.setToken("000001", "ineffably blue", { value: mintPayment });
     await expect(orange.connect(friend).modOwner("000001", stranger)).to.be
       .rejected;
   });
@@ -224,14 +242,12 @@ describe("A metaversal artist who wants to GIVE (modify token owner)", function 
 
   it("can not give an already burned token", async function () {
     // try to give what has already been destroyed
-    await orange.setToken("000001", "ineffably blue");
+    await orange.setToken("000001", "ineffably blue", { value: mintPayment });
     await orange.nixToken("000001");
-    await expect(orange.modOwner("000001")).to.be.rejected;
+    await expect(orange.modOwner("000001", friend)).to.be.rejected;
   });
-
-  // it("can not give a token without enough funds to do so");
 });
-
+/*
 describe("A metaversal artist who wants to RENAME (modify token content/name)", function () {
   before(async function () {
     // setup for this 'describe' block
