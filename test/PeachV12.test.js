@@ -409,41 +409,54 @@ describe("A metaversal artist who wants to AVOID bad token IDs", function () {
     await expect(orange.aGetId({})).to.be.rejected; // empty input
   });
 });
-/*
+
 describe("A metaversal artist who wants to AVOID bad token content/name", function () {
+  let orange;
+
   before(async function () {
     // setup for this 'describe' block
-    Orange = await ethers.getContractFactory("Orange"); // get deployable contract
+    Orange = await ethers.getContractFactory("PeachV12"); // get deployable contract
+    mintPayment = ethers.parseEther("0.001");
   });
 
   beforeEach(async function () {
     // setup for each 'it' block
-    orange = await Orange.deploy(); // deploy contract
+    [owner] = await ethers.getSigners(); // get list of ETH accounts, 1st is deployer
+    orange = await upgrades.deployProxy(Orange, [owner.address], {
+      initializer: "initialize",
+      kind: "uups",
+      timeout: 120000,
+      gasLimit: 5000000,
+    });
     await orange.waitForDeployment(); // wait for deployment completion
   });
 
   it("can not get the name of an unminted token", async function () {
     // try to get the name of a token yet to be created
-    await orange.setToken("000001", "ineffably blue");
+    await orange.setToken("000001", "ineffably blue", { value: mintPayment });
     expect(await orange.getName("000001")).to.equal("ineffably blue");
     await expect(orange.getName("000002")).to.be.rejected;
   });
 
-  it("can not accept a too-short name", async function () {
+  it("can accept a no-length name", async function () {
     // actually, name of zero-length is OK
-    await orange.setToken("000001", "");
+    await orange.setToken("000001", "", { value: mintPayment });
     expect((await orange.getName("000001")).length).to.equal(0);
   });
 
   it("can not accept an empty name", async function () {
     // minting with no name is not OK
-    await expect(orange.setToken("000001")).to.be.rejected; // empty input
+    await expect(orange.setToken("000001", {}, { value: mintPayment })).to.be
+      .rejected; // empty input
   });
 
   it("can not accept a too-long name", async function () {
     // trying to name a too-long name
-    await expect(orange.setToken("000001", "abcdefghijklmnopqrstuvwxyz")).to.be
-      .rejected;
+    await expect(
+      orange.setToken("000001", "abcdefghijklmnopqrstuvwxyz7890123", {
+        value: mintPayment,
+      })
+    ).to.be.rejected;
   });
 
   // it("can not accept a multi-line name");
@@ -451,20 +464,28 @@ describe("A metaversal artist who wants to AVOID bad token content/name", functi
 });
 
 describe("A metaversal artist who wants to AVOID bad token style/picture", function () {
+  let orange;
+
   before(async function () {
     // setup for this 'describe' block
-    Orange = await ethers.getContractFactory("Orange"); // get deployable contract
+    Orange = await ethers.getContractFactory("PeachV12"); // get deployable contract
   });
 
   beforeEach(async function () {
     // setup for each 'it' block
-    orange = await Orange.deploy(); // deploy contract
+    [owner] = await ethers.getSigners(); // get list of ETH accounts, 1st is deployer
+    orange = await upgrades.deployProxy(Orange, [owner.address], {
+      initializer: "initialize",
+      kind: "uups",
+      timeout: 120000,
+      gasLimit: 5000000,
+    });
     await orange.waitForDeployment(); // wait for deployment completion
   });
 
-  it("can not get the pic of an unminted token", async function () {
-    // try to get the pic of a token yet to be created
-    await expect(orange.getPic("000001")).to.be.rejected;
+  it("can get the pic of an unminted token", async function () {
+    // actually can get the pic of a token yet to be created
+    await expect(orange.tokenURI(51)).to.not.be.rejected;
   });
 
   // it("can not accept a too-high style-ID");
@@ -479,29 +500,33 @@ describe("A metaversal artist who wants to AVOID bad token style/picture", funct
     expect(await orange.getColorhex(0)).to.equal("000000"); // lowest decimal value
     expect(await orange.getColorhex(16777215)).to.equal("FFFFFF"); // highest decimal value
     await expect(orange.getColorhex(-1)).to.be.rejected; // too low (really: -1 is out of bounds for the uint type)
-    await expect(orange.getColorhex()).to.be.rejected; // empty input
-    await expect(orange.getColorhex(16777216)).to.be.revertedWith(
-      "too big number"
+    await expect(orange.getColorhex({})).to.be.rejected; // empty input
+    await expect(orange.getColorhex(16777216)).to.be.revertedWithCustomError(
+      orange,
+      "InvalidTokenId"
     ); // too high
   });
 });
 
 describe("An administrator who wants to ADMINISTER this contract", function () {
+  let orange;
+
   before(async function () {
     // setup for this 'describe' block
-    Orange = await ethers.getContractFactory("Orange"); // get deployable contract
-    output000002 =
-      "data:application/json;base64,eyJuYW1lIjogImVmZmFibHkgYmx1ZSIsICJkZXNjcmlwdGlvbiI6ICJEb3ZlciBpcyB0b3RhbGx5IGEgdGVzdC4iLCAiaW1hZ2UiOiAiZGF0YTppbWFnZS9zdmcreG1sO2Jhc2U2NCxQSE4yWnlCNGJXeHVjejBpYUhSMGNEb3ZMM2QzZHk1M015NXZjbWN2TWpBd01DOXpkbWNpSUhCeVpYTmxjblpsUVhOd1pXTjBVbUYwYVc4OUluaE5hVzVaVFdsdUlHMWxaWFFpSUhacFpYZENiM2c5SWpBZ01DQXpOVEFnTXpVd0lqNDhjM1I1YkdVK0xtSmhjMlVnZXlCbWFXeHNPaUIzYUdsMFpUc2dabTl1ZEMxbVlXMXBiSGs2SUhObGNtbG1PeUJtYjI1MExYTnBlbVU2SURFMGNIZzdJSDA4TDNOMGVXeGxQanh5WldOMElIZHBaSFJvUFNJeE1EQWxJaUJvWldsbmFIUTlJakV3TUNVaUlHWnBiR3c5SW1Kc1lXTnJJaUF2UGp4MFpYaDBJSGc5SWpVd0pTSWdlVDBpTXpJd0lpQjBaWGgwTFdGdVkyaHZjajBpYldsa1pHeGxJaUJqYkdGemN6MGlZbUZ6WlNJK1pXWm1ZV0pzZVNCaWJIVmxQQzkwWlhoMFBqeDBaWGgwSUhnOUlqVXdKU0lnZVQwaU16TTNJaUIwWlhoMExXRnVZMmh2Y2owaWJXbGtaR3hsSWlCamJHRnpjejBpWW1GelpTSStJekF3TURBd01qd3ZkR1Y0ZEQ0OGNtVmpkQ0I0UFNJMU1DSWdlVDBpTlRBaUlIZHBaSFJvUFNJeU5UQWlJR2hsYVdkb2REMGlNalV3SWlCbWFXeHNQU0lqTURBd01EQXlJaUF2UGp3dmMzWm5QZz09In0=";
-    mintUnderPayment = ethers.parseEther("0.0001");
+    Orange = await ethers.getContractFactory("PeachV12"); // get deployable contract
     mintPayment = ethers.parseEther("0.001");
-    mintOverPayment = ethers.parseEther("0.01");
   });
 
   beforeEach(async function () {
     // setup for each 'it' block
-    orange = await Orange.deploy(); // deploy contract
-    await orange.waitForDeployment(); // wait for deployment completion
     [owner, friend, stranger, villain] = await ethers.getSigners(); // get list of ETH accounts, 1st is deployer
+    orange = await upgrades.deployProxy(Orange, [owner.address], {
+      initializer: "initialize",
+      kind: "uups",
+      timeout: 120000,
+      gasLimit: 5000000,
+    });
+    await orange.waitForDeployment(); // wait for deployment completion
   });
 
   it("can extract funds collected after numerous mints", async function () {
@@ -530,7 +555,6 @@ describe("An administrator who wants to ADMINISTER this contract", function () {
     ); // comparing!
   });
 });
-*/
 
 /* 
 testing how (apply to each 'testing what'):
