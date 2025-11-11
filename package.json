@@ -20,6 +20,7 @@
     "@openzeppelin/hardhat-upgrades": "^3.9.1",
     "dotenv": "^17.2.3",
     "ethers": "^6.15.0",
-    "hardhat": "^2.26.3"
+    "hardhat": "^2.26.3",
+    "solidity-coverage": "^0.8.16"
   }
 }

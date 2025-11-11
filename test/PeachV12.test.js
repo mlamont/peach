@@ -435,7 +435,10 @@ describe("A metaversal artist who wants to AVOID bad token content/name", functi
     // try to get the name of a token yet to be created
     await orange.setToken("000001", "ineffably blue", { value: mintPayment });
     expect(await orange.getName("000001")).to.equal("ineffably blue");
-    await expect(orange.getName("000002")).to.be.rejected;
+    await expect(orange.getName("000002")).to.be.revertedWithCustomError(
+      orange,
+      "InvalidTokenId"
+    );
   });
 
   it("can accept a no-length name", async function () {
@@ -486,6 +489,14 @@ describe("A metaversal artist who wants to AVOID bad token style/picture", funct
   it("can get the pic of an unminted token", async function () {
     // actually can get the pic of a token yet to be created
     await expect(orange.tokenURI(51)).to.not.be.rejected;
+  });
+
+  it("can not accept a too-high tokenId", async function () {
+    // trying to get the pic of a too-high tokenId
+    await expect(orange.tokenURI(16777216)).to.be.revertedWithCustomError(
+      orange,
+      "InvalidTokenId"
+    );
   });
 
   // it("can not accept a too-high style-ID");
