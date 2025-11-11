@@ -9,50 +9,47 @@ describe("A metaversal artist who wants to MINT (create tokens)", function () {
     mintUnderPayment = ethers.parseEther("0.0001");
     mintPayment = ethers.parseEther("0.001");
     mintOverPayment = ethers.parseEther("0.01");
+    mintSuperPayment = ethers.parseEther("1");
+    mintSuperDuperPayment = ethers.parseEther("10");
   });
 
   beforeEach(async function () {
     // setup for each 'it' block
     [owner, friend] = await ethers.getSigners(); // get list of ETH accounts, 1st is deployer
-    const peach = await upgrades.deployProxy(Peach, [owner.address], {
+    peach = await upgrades.deployProxy(Peach, [owner.address], {
       initializer: "initialize",
       kind: "uups",
       timeout: 120000,
       gasLimit: 5000000,
     });
     await peach.waitForDeployment();
+    console.log("Peach deployed to:", await peach.getAddress()); // (PPP)
   });
 
   it("can create a new token", async function () {
-    // mint a token, with its tokenID in decimal form
-    // await orange.setToken("000001", "ineffably blue");
-    // expect(await orange.getOwner("000001")).to.equal(owner.address);
-
     // mint a token, with its tokenID in colorhex form
-    await peach.setToken("000000", "black");
-    expect(await peach.getOwner("000000")).to.equal(owner.address);
+    await peach.setToken("010101", "dark gray", { value: mintPayment });
+    expect(await peach.getOwner("010101")).to.equal(owner.address);
   });
 
   it("can name a new token", async function () {
     // name is correct
-    await peach.setToken("000002", "effably blue");
-    expect(await peach.getName("000002")).to.equal("effably blue");
+    await peach.setToken("010101", "dark gray", { value: mintPayment });
+    expect(await peach.getName("010101")).to.equal("dark gray");
   });
 
   it("can style a new token", async function () {
     // metadata & pic are correct
-    await peach.setToken("000002", "effably blue");
+    await peach.setToken("000002", "effably blue", { value: mintPayment });
     // expect(await orange.getPic(2)).to.equal(output000002);
     expect(await peach.getPic("000002")).to.equal(output000002);
   });
 
   it("can not create a badly ID'd token", async function () {
     // try minting with a bad token-ID
-    await peach.setToken("FFFFFF", "white");
+    await peach.setToken("FFFFFF", "white", { value: mintSuperDuperPayment });
     expect(await peach.getName("FFFFFF")).to.be.equal("white"); // highest token-ID
-    // await expect(orange.mintAtId(-1, "toolow")).to.be.rejected; // too low
     await expect(peach.setToken()).to.be.rejected; // empty input
-    // await expect(orange.mintAtId(16777216, "toohigh")).to.be.revertedWith("too big tokenId"); // too high
   });
 
   it("can not create a badly named token", async function () {

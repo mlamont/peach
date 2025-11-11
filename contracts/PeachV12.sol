@@ -13,7 +13,7 @@ import {ERC721Utils} from "@openzeppelin/contracts/token/ERC721/utils/ERC721Util
 /// @author Merrill B. Lamont III (rockopera.eth)
 /// @notice Own a color. Name that color. Make art onchain.
 /// @dev Onchain art tech for onchain art work: 1 NFT color swatch for each of the 16M+ web colors.
-contract PeachV11 is
+contract PeachV12 is
     Initializable,
     ERC721Upgradeable,
     OwnableUpgradeable,
