@@ -247,61 +247,65 @@ describe("A metaversal artist who wants to GIVE (modify token owner)", function 
     await expect(orange.modOwner("000001", friend)).to.be.rejected;
   });
 });
-/*
+
 describe("A metaversal artist who wants to RENAME (modify token content/name)", function () {
+  let orange;
+
   before(async function () {
     // setup for this 'describe' block
-    Orange = await ethers.getContractFactory("Orange"); // get deployable contract
+    Orange = await ethers.getContractFactory("PeachV12"); // get deployable contract
+    mintPayment = ethers.parseEther("0.001");
+    mintSuperDuperPayment = ethers.parseEther("10");
   });
 
   beforeEach(async function () {
     // setup for each 'it' block
-    orange = await Orange.deploy(); // deploy contract
-    await orange.waitForDeployment(); // wait for deployment completion
     [owner, friend, stranger] = await ethers.getSigners(); // get list of ETH accounts, 1st is deployer
+    // orange = await Orange.deploy(); // deploy contract
+    orange = await upgrades.deployProxy(Orange, [owner.address], {
+      initializer: "initialize",
+      kind: "uups",
+      timeout: 120000,
+      gasLimit: 5000000,
+    });
+    await orange.waitForDeployment(); // wait for deployment completion
   });
 
   it("can rename an owned token", async function () {
-    // rename a token, with its tokenID in decimal form
-    await orange.setToken("000001", "ineffably blue");
+    // rename a token, with its tokenID in colorhex form
+    await orange.setToken("000001", "ineffably blue", { value: mintPayment });
     expect(await orange.getName("000001")).to.equal("ineffably blue");
     await orange.modName("000001", "very dark blue");
     expect(await orange.getName("000001")).to.equal("very dark blue");
-
-    // rename a token, with its tokenID in colorhex form
-    await orange.modName("000001", "wikked dahhk blue");
-    expect(await orange.getName("000001")).to.equal("wikked dahhk blue");
   });
 
   it("can not rename an existing yet unowned token", async function () {
     // owner mints, then connect friend, then friend tries to rename it
-    await orange.setToken("000001", "ineffably blue");
+    await orange.setToken("000001", "ineffably blue", { value: mintPayment });
     await expect(
       orange.connect(friend).modName("000001", "wicked dahk blue")
-    ).to.be.revertedWith("not the owner");
+    ).to.be.revertedWithCustomError(orange, "NotTokenOwner");
     await expect(
       orange.connect(stranger).modName("000001", "very dark blue")
-    ).to.be.revertedWith("not the owner");
+    ).to.be.revertedWithCustomError(orange, "NotTokenOwner");
   });
 
   it("can not rename a badly ID'd token", async function () {
     // try renaming with a bad token-ID
-    await orange.setToken("FFFFFF", "white");
+    await orange.setToken("FFFFFF", "white", { value: mintSuperDuperPayment });
     await orange.modName("FFFFFF", "not black");
     expect(await orange.getName("FFFFFF")).to.equal("not black"); // highest token-ID
-    // await expect(orange.renameAtId(-1, "toolow")).to.be.rejected; // too low
-    await expect(orange.modName()).to.be.rejected; // empty input
-    // await expect(orange.renameAtId(16777216, "toohigh")).to.be.revertedWith("too big tokenId"); // too high
+    await expect(orange.modName({}, "light light")).to.be.rejected; // empty input
   });
 
   it("can not rename a token to a bad name", async function () {
     // try renaming with a bad name
-    await orange.setToken("000001", "ineffably blue");
-    await expect(orange.modName("000001")).to.be.rejected; // empty input
-    await expect(orange.modName("000001", "abcdefghijklmnopqrstuvwxy")).to.be
-      .rejected; // too long
-    await expect(orange.modName("000001", "abcdefghijklmnopqrstuvwx")).to.not.be
-      .rejected; // max lengh
+    await orange.setToken("000001", "ineffably blue", { value: mintPayment });
+    await expect(orange.modName("000001", {})).to.be.rejected; // empty input
+    await expect(orange.modName("000001", "abcdefghijklmnopqrstuvwxyz7890123"))
+      .to.be.rejected; // too long
+    await expect(orange.modName("000001", "abcdefghijklmnopqrstuvwxyz789012"))
+      .to.not.be.rejected; // max lengh
   });
 
   it("can not rename an unminted token", async function () {
@@ -311,12 +315,10 @@ describe("A metaversal artist who wants to RENAME (modify token content/name)", 
 
   it("can not rename an already burned token", async function () {
     // try to rename a token that has already been destroyed
-    await orange.setToken("000001", "ineffably blue");
+    await orange.setToken("000001", "ineffably blue", { value: mintPayment });
     await orange.nixToken("000001");
     await expect(orange.modName("000001", "wicked dark blue")).to.be.rejected;
   });
-
-  // it("can not rename a token without enough funds to do so");
 });
 
 describe("A metaversal artist who wants to RESTYLE (modify token style/picture)", function () {
@@ -328,16 +330,23 @@ describe("A metaversal artist who wants to RESTYLE (modify token style/picture)"
 });
 
 describe("A metaversal artist who wants to AVOID bad token IDs", function () {
+  let orange;
+
   before(async function () {
     // setup for this 'describe' block
-    Orange = await ethers.getContractFactory("Orange"); // get deployable contract
+    Orange = await ethers.getContractFactory("PeachV12"); // get deployable contract
   });
 
   beforeEach(async function () {
     // setup for each 'it' block
-    orange = await Orange.deploy(); // deploy contract
-    await orange.waitForDeployment(); // wait for deployment completion
     [owner, friend] = await ethers.getSigners(); // get list of ETH accounts, 1st is deployer
+    orange = await upgrades.deployProxy(Orange, [owner.address], {
+      initializer: "initialize",
+      kind: "uups",
+      timeout: 120000,
+      gasLimit: 5000000,
+    });
+    await orange.waitForDeployment(); // wait for deployment completion
   });
 
   // it("can not accept a too-high token-ID");
@@ -364,49 +373,43 @@ describe("A metaversal artist who wants to AVOID bad token IDs", function () {
 
   it("can not accept an empty token-ID", async function () {
     // calling functions with no token-ID
-    await orange.setToken("000001", "ineffably blue"); // something to exist with a name we're using
-    await expect(orange.setToken("ineffably blue")).to.be.rejected; // empty input
-    await expect(orange.modName("ineffably blue")).to.be.rejected; // empty input
-    await expect(orange.getName()).to.be.rejected; // empty input
-    await expect(orange.nixToken()).to.be.rejected; // empty input
-    await expect(orange.modOwner(friend)).to.be.rejected; // empty input
-    await expect(orange.getOwner()).to.be.rejected; // empty input
-    await expect(orange.getPic()).to.be.rejected; // empty input
+    await orange.setToken("000001", "ineffably blue", { value: mintPayment }); // something to exist with a name we're using
+    await expect(orange.setToken({}, "effably blue")).to.be.rejected; // empty input
+    await expect(orange.modName({}, "effably blue")).to.be.rejected; // empty input
+    await expect(orange.getName({})).to.be.rejected; // empty input
+    await expect(orange.nixToken({})).to.be.rejected; // empty input
+    await expect(orange.modOwner({}, friend)).to.be.rejected; // empty input
+    await expect(orange.getOwner({})).to.be.rejected; // empty input
+    await expect(orange.tokenURI({})).to.be.rejected; // empty input
   });
 
   it("can not accept an improperly converted token-ID", async function () {
     // converting from colorhex to decimal
-    expect(
-      (await orange.validateColorhexAndGetId("00FF00")).toString()
-    ).to.equal("65280"); // happy path of colorhex in capital letters
-    expect(
-      (await orange.validateColorhexAndGetId("00ff00")).toString()
-    ).to.equal("65280"); // happy path of colorhex in lowercase letters
-    await expect(orange.validateColorhexAndGetId("0000000")).to.be.revertedWith(
-      "improper size"
+    expect((await orange.aGetId("00FF00")).toString()).to.equal("65280"); // happy path of colorhex in capital letters
+    expect((await orange.aGetId("00ff00")).toString()).to.equal("65280"); // happy path of colorhex in lowercase letters
+    await expect(orange.aGetId("0000000")).to.be.revertedWithCustomError(
+      orange,
+      "InvalidColorhex"
     ); // hex, but too big
-    await expect(orange.validateColorhexAndGetId("00000")).to.be.revertedWith(
-      "improper size"
+    await expect(orange.aGetId("00000")).to.be.revertedWithCustomError(
+      orange,
+      "InvalidColorhex"
     ); // hex, but too small
-    await expect(orange.validateColorhexAndGetId("")).to.be.revertedWith(
-      "improper size"
+    await expect(orange.aGetId("")).to.be.revertedWithCustomError(
+      orange,
+      "InvalidColorhex"
     ); // hex, but way too small
-    await expect(orange.validateColorhexAndGetId("G0000G")).to.be.revertedWith(
-      "Invalid color-hexadecimal string."
+    await expect(orange.aGetId("G0000G")).to.be.revertedWithCustomError(
+      orange,
+      "InvalidColorhex"
     ); // string, but not hex
-    expect(
-      (await orange.validateColorhexAndGetId("00FF00")).toString()
-    ).to.not.equal("65281"); // incorrect conversion
-    expect(
-      (await orange.validateColorhexAndGetId("000000")).toString()
-    ).to.equal("0"); // lowest colorhex value
-    expect(
-      (await orange.validateColorhexAndGetId("FFFFFF")).toString()
-    ).to.equal("16777215"); // highest colorhex value
-    await expect(orange.validateColorhexAndGetId()).to.be.rejected; // empty input
+    expect((await orange.aGetId("00FF00")).toString()).to.not.equal("65281"); // incorrect conversion
+    expect((await orange.aGetId("000000")).toString()).to.equal("0"); // lowest colorhex value
+    expect((await orange.aGetId("FFFFFF")).toString()).to.equal("16777215"); // highest colorhex value
+    await expect(orange.aGetId({})).to.be.rejected; // empty input
   });
 });
-
+/*
 describe("A metaversal artist who wants to AVOID bad token content/name", function () {
   before(async function () {
     // setup for this 'describe' block
