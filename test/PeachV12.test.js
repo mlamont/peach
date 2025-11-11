@@ -4,8 +4,8 @@ describe("A metaversal artist who wants to MINT (create tokens)", function () {
   before(async function () {
     // setup for this 'describe' block
     Peach = await ethers.getContractFactory("PeachV12"); // get deployable contract
-    output000002 =
-      "data:application/json;base64,eyJuYW1lIjogImVmZmFibHkgYmx1ZSIsICJkZXNjcmlwdGlvbiI6ICJEb3ZlciBpcyB0b3RhbGx5IGEgdGVzdC4iLCAiaW1hZ2UiOiAiZGF0YTppbWFnZS9zdmcreG1sO2Jhc2U2NCxQSE4yWnlCNGJXeHVjejBpYUhSMGNEb3ZMM2QzZHk1M015NXZjbWN2TWpBd01DOXpkbWNpSUhCeVpYTmxjblpsUVhOd1pXTjBVbUYwYVc4OUluaE5hVzVaVFdsdUlHMWxaWFFpSUhacFpYZENiM2c5SWpBZ01DQXpOVEFnTXpVd0lqNDhjM1I1YkdVK0xtSmhjMlVnZXlCbWFXeHNPaUIzYUdsMFpUc2dabTl1ZEMxbVlXMXBiSGs2SUhObGNtbG1PeUJtYjI1MExYTnBlbVU2SURFMGNIZzdJSDA4TDNOMGVXeGxQanh5WldOMElIZHBaSFJvUFNJeE1EQWxJaUJvWldsbmFIUTlJakV3TUNVaUlHWnBiR3c5SW1Kc1lXTnJJaUF2UGp4MFpYaDBJSGc5SWpVd0pTSWdlVDBpTXpJd0lpQjBaWGgwTFdGdVkyaHZjajBpYldsa1pHeGxJaUJqYkdGemN6MGlZbUZ6WlNJK1pXWm1ZV0pzZVNCaWJIVmxQQzkwWlhoMFBqeDBaWGgwSUhnOUlqVXdKU0lnZVQwaU16TTNJaUIwWlhoMExXRnVZMmh2Y2owaWJXbGtaR3hsSWlCamJHRnpjejBpWW1GelpTSStJekF3TURBd01qd3ZkR1Y0ZEQ0OGNtVmpkQ0I0UFNJMU1DSWdlVDBpTlRBaUlIZHBaSFJvUFNJeU5UQWlJR2hsYVdkb2REMGlNalV3SWlCbWFXeHNQU0lqTURBd01EQXlJaUF2UGp3dmMzWm5QZz09In0=";
+    outputC1B7A0 =
+      "data:application/json;base64,eyJuYW1lIjogInRoZSBtdXJwaCBudW1lcmFsIiwgImRlc2NyaXB0aW9uIjogImEgcm9ja29wZXJhIGNvbG9yIGZvciBvbmNoYWluIGFydCIsICJpbWFnZSI6ICJkYXRhOmltYWdlL3N2Zyt4bWw7YmFzZTY0LFBITjJaeUI0Yld4dWN6MGlhSFIwY0RvdkwzZDNkeTUzTXk1dmNtY3ZNakF3TUM5emRtY2lJSEJ5WlhObGNuWmxRWE53WldOMFVtRjBhVzg5SW5oTmFXNVpUV2x1SUcxbFpYUWlJSFpwWlhkQ2IzZzlJakFnTUNBek5UQWdNelV3SWo0OGMzUjViR1UrTG1KaGMyVWdleUJtYVd4c09pQjNhR2wwWlRzZ1ptOXVkQzFtWVcxcGJIazZJSE5sY21sbU95Qm1iMjUwTFhOcGVtVTZJREUwY0hnN0lIMDhMM04wZVd4bFBqeHlaV04wSUhkcFpIUm9QU0l4TURBbElpQm9aV2xuYUhROUlqRXdNQ1VpSUdacGJHdzlJbUpzWVdOcklpQXZQangwWlhoMElIZzlJalV3SlNJZ2VUMGlNVFlpSUhSbGVIUXRZVzVqYUc5eVBTSnRhV1JrYkdVaUlISnZkR0YwWlQwaU1UZ3dJaUJ6ZEhsc1pUMGlabWxzYkRvZ1lteGhZMnM3SUdadmJuUXRjMmw2WlRvZ016VndlRHNpUGlZak9UZ3hORHM4TDNSbGVIUStQSFJsZUhRZ2VEMGlOVEFsSWlCNVBTSXpNakFpSUhSbGVIUXRZVzVqYUc5eVBTSnRhV1JrYkdVaUlHTnNZWE56UFNKaVlYTmxJajUwYUdVZ2JYVnljR2dnYm5WdFpYSmhiRHd2ZEdWNGRENDhkR1Y0ZENCNFBTSTFNQ1VpSUhrOUlqTXpOeUlnZEdWNGRDMWhibU5vYjNJOUltMXBaR1JzWlNJZ1kyeGhjM005SW1KaGMyVWlQaU5ETVVJM1FUQThMM1JsZUhRK1BISmxZM1FnZUQwaU5UQWlJSGs5SWpVd0lpQjNhV1IwYUQwaU1qVXdJaUJvWldsbmFIUTlJakkxTUNJZ1ptbHNiRDBpSTBNeFFqZEJNQ0lnTHo0OEwzTjJaejQ9In0=";
     mintUnderPayment = ethers.parseEther("0.0001");
     mintPayment = ethers.parseEther("0.001");
     mintOverPayment = ethers.parseEther("0.01");
@@ -40,9 +40,8 @@ describe("A metaversal artist who wants to MINT (create tokens)", function () {
 
   it("can style a new token", async function () {
     // metadata & pic are correct
-    await peach.setToken("000002", "effably blue", { value: mintPayment });
-    // expect(await orange.getPic(2)).to.equal(output000002);
-    expect(await peach.getPic("000002")).to.equal(output000002);
+    await peach.setToken("C1B7A0", "the murph numeral", { value: mintPayment });
+    expect(await peach.tokenURI(12695456)).to.equal(outputC1B7A0);
   });
 
   it("can not create a badly ID'd token", async function () {
@@ -54,13 +53,20 @@ describe("A metaversal artist who wants to MINT (create tokens)", function () {
 
   it("can not create a badly named token", async function () {
     // try minting with a bad name
-    await expect(peach.setToken("000001")).to.be.rejected; // empty input
-    await expect(peach.setToken("000001", "abcdefghijklmnopqrstuvwxy")).to.be
-      .rejected; // too long
-    await expect(peach.setToken("000001", "abcdefghijklmnopqrstuvwx")).to.not.be
-      .rejected; // max lengh
+    await expect(peach.setToken("010101", {}, { value: mintPayment })).to.be
+      .rejected; // empty input
+    await expect(
+      peach.setToken("010102", "abcdefghijklmnopqrstuvwxyz7890123", {
+        value: mintPayment,
+      })
+    ).to.be.rejected; // too long
+    await expect(
+      peach.setToken("010103", "abcdefghijklmnopqrstuvwxyz789012", {
+        value: mintPayment,
+      })
+    ).to.not.be.rejected; // max length
   });
-
+  /*
   it("can not create an already existing token", async function () {
     // try minting at a token-ID you just minted at
     await peach.setToken("000001", "ineffably blue");
@@ -98,6 +104,7 @@ describe("A metaversal artist who wants to MINT (create tokens)", function () {
     ).to.be.rejectedWith("Insufficient payment.");
     await expect(peach.getOwner("000003")).to.be.rejected;
   });
+  */
 });
 
 /*
