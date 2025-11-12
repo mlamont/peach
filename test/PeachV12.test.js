@@ -610,7 +610,171 @@ describe("An administrator who wants to ADMINISTER this contract", function () {
   });
 });
 
-/* 
+describe("A metaversal artist who wants to DONATE (send funds)", function () {
+  let peach;
+
+  before(async function () {
+    // setup for this 'describe' block
+    Orange = await ethers.getContractFactory("PeachV12"); // get deployable contract
+    mintPayment = ethers.parseEther("0.001");
+  });
+
+  beforeEach(async function () {
+    // setup for each 'it' block
+    [owner, friend, stranger, villain] = await ethers.getSigners(); // get list of ETH accounts, 1st is deployer
+    peach = await upgrades.deployProxy(Orange, [owner.address], {
+      initializer: "initialize",
+      kind: "uups",
+      timeout: 120000,
+      gasLimit: 5000000,
+    });
+    await peach.waitForDeployment(); // wait for deployment completion
+  });
+
+  it("can send Ether via Receive function", async function () {
+    const sendAmount = ethers.parseEther("0.5");
+    const tx = await owner.sendTransaction({
+      to: await peach.getAddress(),
+      value: sendAmount,
+    });
+    await expect(tx)
+      .to.emit(peach, "LogDepositReceived")
+      .withArgs(owner.address, sendAmount);
+  });
+
+  it("can increase contract balance via Receive function", async function () {
+    const sendAmount = ethers.parseEther("1");
+    const balanceBefore = await ethers.provider.getBalance(
+      await peach.getAddress()
+    );
+
+    await owner.sendTransaction({
+      to: await peach.getAddress(),
+      value: sendAmount,
+    });
+
+    const balanceAfter = await ethers.provider.getBalance(
+      await peach.getAddress()
+    );
+    expect(balanceAfter - balanceBefore).to.equal(sendAmount);
+  });
+
+  it("can send Ether alongside other senders via Receive function", async function () {
+    const amount1 = ethers.parseEther("0.5");
+    const amount2 = ethers.parseEther("0.3");
+
+    const tx1 = await owner.sendTransaction({
+      to: await peach.getAddress(),
+      value: amount1,
+    });
+    const tx2 = await friend.sendTransaction({
+      to: await peach.getAddress(),
+      value: amount2,
+    });
+
+    await expect(tx1)
+      .to.emit(peach, "LogDepositReceived")
+      .withArgs(owner.address, amount1);
+    await expect(tx2)
+      .to.emit(peach, "LogDepositReceived")
+      .withArgs(friend.address, amount2);
+  });
+});
+
+describe("A metaversal artist who wants to use FALLBACK (send invalid calls)", function () {
+  let peach;
+
+  before(async function () {
+    // setup for this 'describe' block
+    Orange = await ethers.getContractFactory("PeachV12"); // get deployable contract
+    mintPayment = ethers.parseEther("0.001");
+  });
+
+  beforeEach(async function () {
+    // setup for each 'it' block
+    [owner, friend, stranger, villain] = await ethers.getSigners(); // get list of ETH accounts, 1st is deployer
+    peach = await upgrades.deployProxy(Orange, [owner.address], {
+      initializer: "initialize",
+      kind: "uups",
+      timeout: 120000,
+      gasLimit: 5000000,
+    });
+    await peach.waitForDeployment(); // wait for deployment completion
+  });
+
+  it("can trigger Fallback function by calling non-existent function with funds", async function () {
+    const sendAmount = ethers.parseEther("0.5");
+
+    // Call a non-existent function with random data
+    const tx = await owner.sendTransaction({
+      to: await peach.getAddress(),
+      value: sendAmount,
+      data: "0x12345678", // Random function selector that doesn't exist
+    });
+
+    // Expect the LogDepositReceived event to be emitted
+    await expect(tx)
+      .to.emit(peach, "LogDepositReceived")
+      .withArgs(owner.address, sendAmount);
+  });
+
+  it("can trigger Fallback function by calling non-existent function without funds", async function () {
+    // Call with invalid data but no ether
+    const tx = await owner.sendTransaction({
+      to: await peach.getAddress(),
+      data: "0xabcdef00",
+    });
+
+    // Event should still be emitted with 0 value
+    await expect(tx)
+      .to.emit(peach, "LogDepositReceived")
+      .withArgs(owner.address, 0);
+  });
+
+  it("can increase contract balance via Fallback function", async function () {
+    const sendAmount = ethers.parseEther("1");
+    const balanceBefore = await ethers.provider.getBalance(
+      await peach.getAddress()
+    );
+
+    // Send ether with invalid call data (triggers fallback)
+    await owner.sendTransaction({
+      to: await peach.getAddress(),
+      value: sendAmount,
+      data: "0xdeadbeef", // Invalid function call
+    });
+
+    const balanceAfter = await ethers.provider.getBalance(
+      await peach.getAddress()
+    );
+    expect(balanceAfter - balanceBefore).to.equal(sendAmount);
+  });
+
+  it("can send Ether alongside other senders via Fallback function", async function () {
+    const amount1 = ethers.parseEther("0.5");
+    const amount2 = ethers.parseEther("0.3");
+
+    const tx1 = await owner.sendTransaction({
+      to: await peach.getAddress(),
+      value: amount1,
+      data: "0xffffffff",
+    });
+    const tx2 = await friend.sendTransaction({
+      to: await peach.getAddress(),
+      value: amount2,
+      data: "0x00000001",
+    });
+
+    await expect(tx1)
+      .to.emit(peach, "LogDepositReceived")
+      .withArgs(owner.address, amount1);
+    await expect(tx2)
+      .to.emit(peach, "LogDepositReceived")
+      .withArgs(friend.address, amount2);
+  });
+});
+
+/*
 testing how (apply to each 'testing what'):
 - easy to read & update
 - target observable beh'r > implement'n details
