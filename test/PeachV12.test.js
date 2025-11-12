@@ -3,6 +3,7 @@ const { ethers, upgrades } = require("hardhat");
 
 describe("A metaversal artist who wants to MINT (create tokens)", function () {
   let peach; // Declare peach here so it's accessible in all tests
+  let Peach;
 
   before(async function () {
     // setup for this 'describe' block
@@ -32,6 +33,9 @@ describe("A metaversal artist who wants to MINT (create tokens)", function () {
     // mint a token, with its tokenID in colorhex form
     await peach.setToken("010101", "dark gray", { value: mintPayment });
     expect(await peach.getOwner("010101")).to.equal(owner.address);
+
+    console.log("owner address: ", owner.address);
+    console.log("peach address: ", await peach.getAddress());
   });
 
   it("can name a new token", async function () {
@@ -621,14 +625,16 @@ describe("An administrator who wants to ADMINISTER this contract", function () {
   });
 
   it("can upgrade the contract", async function () {
-    expect(await orange.upgradeabilityEnded()).to.equal(false);
-    const PrevPeach = await ethers.getContractFactory("PeachV11");
-    await upgrades.upgradeProxy(await orange.getAddress(), PrevPeach);
-    await orange.endUpgradeability();
-    expect(await orange.upgradeabilityEnded()).to.equal(true);
+    expect(await orange.upgradeabilityEnded()).to.equal(false); // upgradeable
+    const PrevPeach = await ethers.getContractFactory("PeachV11"); // prep next contract
+    await upgrades.upgradeProxy(await orange.getAddress(), PrevPeach); // upgrade
+    await upgrades.upgradeProxy(await orange.getAddress(), Orange); // upgrade back, so testing target contract
+    await orange.endUpgradeability(); // end upgradeability
+    expect(await orange.upgradeabilityEnded()).to.equal(true); // no longer upgradeable
+    // await upgrades.upgradeProxy(await orange.getAddress(), PrevPeach); // should fail in some way
     await expect(
-      upgrades.upgradeProxy(await orange.getAddress(), Orange)
-    ).to.be.rejectedWith("Contract is not upgradeable");
+      upgrades.upgradeProxy(await orange.getAddress(), PrevPeach)
+    ).to.be.rejectedWith("Contract is not upgradeable"); // try to upgrade
   });
 });
 
@@ -793,6 +799,79 @@ describe("A metaversal artist who wants to use FALLBACK (send invalid calls)", f
     await expect(tx2)
       .to.emit(peach, "LogDepositReceived")
       .withArgs(friend.address, amount2);
+  });
+});
+
+describe("An administrator who wants to handle WITHDRAWAL FAILURES", function () {
+  let peach;
+  let maliciousRecipient;
+
+  before(async function () {
+    Orange = await ethers.getContractFactory("PeachV12");
+    mintPayment = ethers.parseEther("0.001");
+  });
+
+  beforeEach(async function () {
+    [owner, friend] = await ethers.getSigners();
+
+    // Deploy a malicious contract that rejects ether
+    const MaliciousRecipient = await ethers.getContractFactory(
+      "MaliciousRecipient"
+    );
+    // maliciousRecipient = await MaliciousRecipient.deploy();
+    maliciousRecipient = await MaliciousRecipient.deploy({
+      value: mintPayment, // Send funds during deployment
+    });
+    await maliciousRecipient.waitForDeployment();
+
+    peach = await upgrades.deployProxy(
+      Orange,
+      [await maliciousRecipient.getAddress()],
+      {
+        initializer: "initialize",
+        kind: "uups",
+        timeout: 120000,
+        gasLimit: 5000000,
+      }
+    );
+    await peach.waitForDeployment();
+  });
+
+  it("can not withdraw if withdrawal call fails", async function () {
+    // Deposit funds by calling receive
+    await owner.sendTransaction({
+      to: await peach.getAddress(),
+      value: mintPayment,
+    });
+
+    console.log("owner address: ", owner.address);
+    console.log("peach address: ", await peach.getAddress());
+    console.log(
+      "maliciousRecipient address: ",
+      await maliciousRecipient.getAddress()
+    );
+
+    // Impersonate the malicious recipient so we can call withdraw() as if we're that address
+    await ethers.provider.send("hardhat_impersonateAccount", [
+      await maliciousRecipient.getAddress(),
+    ]);
+
+    // Get a signer for the impersonated account
+    const maliciousOwner = await ethers.getSigner(
+      await maliciousRecipient.getAddress()
+    );
+
+    console.log("maliciousOwner address: ", maliciousOwner.address);
+
+    // Try to withdraw - should fail because owner (maliciousRecipient) rejects it
+    await expect(
+      peach.connect(maliciousOwner).withdraw()
+    ).to.be.revertedWithCustomError(peach, "WithdrawalFailed");
+
+    // Stop impersonating when done
+    await ethers.provider.send("hardhat_stopImpersonatingAccount", [
+      await maliciousRecipient.getAddress(),
+    ]);
   });
 });
 
