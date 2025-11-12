@@ -108,6 +108,42 @@ describe("A metaversal artist who wants to MINT (create tokens)", function () {
     ).to.be.revertedWithCustomError(peach, "NeedMoreFundsForThisColor");
     await expect(peach.getOwner("000003")).to.be.rejected;
   });
+
+  it("can create new tokens at different tiers", async function () {
+    // mint an extra premium token, with enough funds
+    await peach.setToken("000000", "black", { value: mintSuperDuperPayment });
+    expect(await peach.getOwner("000000")).to.equal(owner.address);
+    // try to mint an extra premium token, without enough funds
+    await expect(
+      peach.setToken("FFFFFF", "white", { value: mintSuperPayment })
+    ).to.be.revertedWithCustomError(peach, "NeedMoreFundsForThisColor");
+    await expect(peach.getOwner("FFFFFF")).to.be.rejected;
+    // mint a premium token, with enough funds
+    await peach.setToken("0000FF", "blue", { value: mintSuperPayment });
+    expect(await peach.getOwner("0000FF")).to.equal(owner.address);
+    // ...and cover the rest of the logic branches for premium tokens...
+    await peach.setToken("FF0000", "red", { value: mintSuperPayment });
+    expect(await peach.getOwner("FF0000")).to.equal(owner.address);
+    await peach.setToken("00FFFF", "cyan", { value: mintSuperPayment });
+    expect(await peach.getOwner("00FFFF")).to.equal(owner.address);
+    await peach.setToken("FF00FF", "magenta", { value: mintSuperPayment });
+    expect(await peach.getOwner("FF00FF")).to.equal(owner.address);
+    await peach.setToken("FFFF00", "yellow", { value: mintSuperPayment });
+    expect(await peach.getOwner("FFFF00")).to.equal(owner.address);
+    // try to mint a premium token, without enough funds
+    await expect(
+      peach.setToken("00FF00", "green", { value: mintPayment })
+    ).to.be.revertedWithCustomError(peach, "NeedMoreFundsForThisColor");
+    await expect(peach.getOwner("00FF00")).to.be.rejected;
+    // mint a regular token, with enough funds
+    await peach.setToken("1000FF", "blue-ish", { value: mintPayment });
+    expect(await peach.getOwner("1000FF")).to.equal(owner.address);
+    // try to mint a regular token, without enough funds
+    await expect(
+      peach.setToken("20FF00", "green-ish", { value: mintUnderPayment })
+    ).to.be.revertedWithCustomError(peach, "NeedMoreFundsForThisColor");
+    await expect(peach.getOwner("20FF00")).to.be.rejected;
+  });
 });
 
 describe("A metaversal artist who wants to BURN (destroy tokens)", function () {
@@ -543,20 +579,6 @@ describe("An administrator who wants to ADMINISTER this contract", function () {
     });
     await orange.waitForDeployment(); // wait for deployment completion
   });
-
-  /*
-  it("can send funds on purpose", async function () {
-    // exercise the receive() function
-    // (bool success, ) = owner().call{value: balanceOfThisContract}(""); // call() doesn't require owner() wrapped in payable()
-    // if (!success) revert WithdrawalFailed();
-  });
-
-  it("can send funds by mistake", async function () {
-    // exercise the fallback() function
-    // (bool success, ) = owner().call{value: balanceOfThisContract}(""); // call() doesn't require owner() wrapped in payable()
-    // if (!success) revert WithdrawalFailed();
-  });
-  */
 
   it("can extract funds collected after numerous mints", async function () {
     await expect(orange.withdraw()).to.be.revertedWithCustomError(
