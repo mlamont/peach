@@ -7,7 +7,7 @@ describe("A metaversal artist who wants to MINT (create tokens)", function () {
 
   before(async function () {
     // setup for this 'describe' block
-    Peach = await ethers.getContractFactory("PeachV12"); // get deployable contract
+    Peach = await ethers.getContractFactory("PeachV13"); // get deployable contract
     outputC1B7A0 =
       "data:application/json;base64,eyJuYW1lIjogInRoZSBtdXJwaCBudW1lcmFsIiwgImRlc2NyaXB0aW9uIjogImEgcm9ja29wZXJhIGNvbG9yIGZvciBvbmNoYWluIGFydCIsICJpbWFnZSI6ICJkYXRhOmltYWdlL3N2Zyt4bWw7YmFzZTY0LFBITjJaeUI0Yld4dWN6MGlhSFIwY0RvdkwzZDNkeTUzTXk1dmNtY3ZNakF3TUM5emRtY2lJSEJ5WlhObGNuWmxRWE53WldOMFVtRjBhVzg5SW5oTmFXNVpUV2x1SUcxbFpYUWlJSFpwWlhkQ2IzZzlJakFnTUNBek5UQWdNelV3SWo0OGMzUjViR1UrTG1KaGMyVWdleUJtYVd4c09pQjNhR2wwWlRzZ1ptOXVkQzFtWVcxcGJIazZJSE5sY21sbU95Qm1iMjUwTFhOcGVtVTZJREUwY0hnN0lIMDhMM04wZVd4bFBqeHlaV04wSUhkcFpIUm9QU0l4TURBbElpQm9aV2xuYUhROUlqRXdNQ1VpSUdacGJHdzlJbUpzWVdOcklpQXZQangwWlhoMElIZzlJalV3SlNJZ2VUMGlNVFlpSUhSbGVIUXRZVzVqYUc5eVBTSnRhV1JrYkdVaUlISnZkR0YwWlQwaU1UZ3dJaUJ6ZEhsc1pUMGlabWxzYkRvZ1lteGhZMnM3SUdadmJuUXRjMmw2WlRvZ016VndlRHNpUGlZak9UZ3hORHM4TDNSbGVIUStQSFJsZUhRZ2VEMGlOVEFsSWlCNVBTSXpNakFpSUhSbGVIUXRZVzVqYUc5eVBTSnRhV1JrYkdVaUlHTnNZWE56UFNKaVlYTmxJajUwYUdVZ2JYVnljR2dnYm5WdFpYSmhiRHd2ZEdWNGRENDhkR1Y0ZENCNFBTSTFNQ1VpSUhrOUlqTXpOeUlnZEdWNGRDMWhibU5vYjNJOUltMXBaR1JzWlNJZ1kyeGhjM005SW1KaGMyVWlQaU5ETVVJM1FUQThMM1JsZUhRK1BISmxZM1FnZUQwaU5UQWlJSGs5SWpVd0lpQjNhV1IwYUQwaU1qVXdJaUJvWldsbmFIUTlJakkxTUNJZ1ptbHNiRDBpSTBNeFFqZEJNQ0lnTHo0OEwzTjJaejQ9In0=";
     mintUnderPayment = ethers.parseEther("0.0001");
@@ -155,7 +155,7 @@ describe("A metaversal artist who wants to BURN (destroy tokens)", function () {
 
   before(async function () {
     // setup for this 'describe' block
-    Orange = await ethers.getContractFactory("PeachV12"); // get deployable contract
+    Orange = await ethers.getContractFactory("PeachV13"); // get deployable contract
     zeroAddress = "0x0000000000000000000000000000000000000000";
     // mintUnderPayment = ethers.parseEther("0.0001");
     mintPayment = ethers.parseEther("0.001");
@@ -218,7 +218,7 @@ describe("A metaversal artist who wants to GIVE (modify token owner)", function 
 
   before(async function () {
     // setup for this 'describe' block
-    Orange = await ethers.getContractFactory("PeachV12"); // get deployable contract
+    Orange = await ethers.getContractFactory("PeachV13"); // get deployable contract
     zeroAddress = "0x0000000000000000000000000000000000000000";
     invalidAddress = "0x00000000000000000000000000po_op0000000000";
     mintPayment = ethers.parseEther("0.001");
@@ -297,7 +297,7 @@ describe("A metaversal artist who wants to RENAME (modify token content/name)", 
 
   before(async function () {
     // setup for this 'describe' block
-    Orange = await ethers.getContractFactory("PeachV12"); // get deployable contract
+    Orange = await ethers.getContractFactory("PeachV13"); // get deployable contract
     mintPayment = ethers.parseEther("0.001");
     mintSuperDuperPayment = ethers.parseEther("10");
   });
@@ -378,7 +378,7 @@ describe("A metaversal artist who wants to AVOID bad token IDs", function () {
 
   before(async function () {
     // setup for this 'describe' block
-    Orange = await ethers.getContractFactory("PeachV12"); // get deployable contract
+    Orange = await ethers.getContractFactory("PeachV13"); // get deployable contract
   });
 
   beforeEach(async function () {
@@ -459,7 +459,7 @@ describe("A metaversal artist who wants to AVOID bad token content/name", functi
 
   before(async function () {
     // setup for this 'describe' block
-    Orange = await ethers.getContractFactory("PeachV12"); // get deployable contract
+    Orange = await ethers.getContractFactory("PeachV13"); // get deployable contract
     mintPayment = ethers.parseEther("0.001");
   });
 
@@ -515,7 +515,7 @@ describe("A metaversal artist who wants to AVOID bad token style/picture", funct
 
   before(async function () {
     // setup for this 'describe' block
-    Orange = await ethers.getContractFactory("PeachV12"); // get deployable contract
+    Orange = await ethers.getContractFactory("PeachV13"); // get deployable contract
   });
 
   beforeEach(async function () {
@@ -568,7 +568,7 @@ describe("An administrator who wants to ADMINISTER this contract", function () {
 
   before(async function () {
     // setup for this 'describe' block
-    Orange = await ethers.getContractFactory("PeachV12"); // get deployable contract
+    Orange = await ethers.getContractFactory("PeachV13"); // get deployable contract
     mintPayment = ethers.parseEther("0.001");
   });
 
@@ -643,7 +643,7 @@ describe("A metaversal artist who wants to DONATE (send funds)", function () {
 
   before(async function () {
     // setup for this 'describe' block
-    Orange = await ethers.getContractFactory("PeachV12"); // get deployable contract
+    Orange = await ethers.getContractFactory("PeachV13"); // get deployable contract
     mintPayment = ethers.parseEther("0.001");
   });
 
@@ -714,7 +714,7 @@ describe("A metaversal artist who wants to use FALLBACK (send invalid calls)", f
 
   before(async function () {
     // setup for this 'describe' block
-    Orange = await ethers.getContractFactory("PeachV12"); // get deployable contract
+    Orange = await ethers.getContractFactory("PeachV13"); // get deployable contract
     mintPayment = ethers.parseEther("0.001");
   });
 
@@ -807,7 +807,7 @@ describe("An administrator who wants to handle WITHDRAWAL FAILURES", function ()
   let maliciousRecipient;
 
   before(async function () {
-    Orange = await ethers.getContractFactory("PeachV12");
+    Orange = await ethers.getContractFactory("PeachV13");
     mintPayment = ethers.parseEther("0.001");
   });
 
