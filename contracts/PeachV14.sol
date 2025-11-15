@@ -9,7 +9,7 @@ import "@openzeppelin/contracts/utils/Base64.sol";
 import {StorageSlot} from "@openzeppelin/contracts/utils/StorageSlot.sol";
 import {ERC721Utils} from "@openzeppelin/contracts/token/ERC721/utils/ERC721Utils.sol";
 
-/// @title Peach
+/// @title Peach - V14 is a gas-usage test of using bytes32 instead of string for _names
 /// @author Merrill B. Lamont III (rockopera.eth)
 /// @notice Own a color. Name that color. Make art onchain.
 /// @dev Onchain art tech for onchain art work: 1 NFT color swatch for each of the 16M+ web colors.
@@ -20,7 +20,7 @@ contract PeachV14 is
     UUPSUpgradeable
 {
     /// @dev Custom string per unique tokenId, which can appear in the NFT pic.
-    mapping(uint => string) private _names;
+    mapping(uint => bytes32) private _names;
 
     // For converting from the decimal to the hexadecimal number system.
     bytes16 private constant _HEX_SYMBOLS = "0123456789ABCDEF";
@@ -38,8 +38,8 @@ contract PeachV14 is
 
     /// @notice Logs the change to the custom string per unique tokenId.
     event Rename(
-        string indexed oldName,
-        string indexed newName,
+        bytes32 indexed oldName,
+        bytes32 indexed newName,
         uint indexed tokenId
     );
 
@@ -126,11 +126,8 @@ contract PeachV14 is
     /// @dev Validates colorhex, then passes to a private function to actually do it.
     /// @param colorhex Color's 6-digit hexadecimal representation.
     /// @param name Color's name.
-    function setToken(
-        string calldata colorhex,
-        string calldata name
-    ) external payable {
-        if (bytes(name).length > 32) revert InvalidTokenName(); // cheapest check, first
+    function setToken(string calldata colorhex, bytes32 name) external payable {
+        if (name.length > 32) revert InvalidTokenName(); // cheapest check, first
         uint tokenId = aGetId(colorhex); // gets tokenId
         if (tokenId == 0 || tokenId == 16777215) {
             // extra premium pricing for: black, white
@@ -156,7 +153,7 @@ contract PeachV14 is
     }
 
     // DONE: consider moving all the _modName() checks into modName(), then inline _modName()
-    function _setToken(uint tokenId, string calldata name) internal {
+    function _setToken(uint tokenId, bytes32 name) internal {
         _mint(msg.sender, tokenId); // creates token (first ensures token doesn't exist)
         // _modName(tokenId, name); // names token
         _names[tokenId] = name; // rename token (first ensures token is owned, which also ensures that it exists)
@@ -252,16 +249,14 @@ contract PeachV14 is
     /// @return tokenName Color's name.
     function getName(
         string calldata colorhex
-    ) external view returns (string memory tokenName) {
+    ) external view returns (bytes32 tokenName) {
         uint tokenId = aGetId(colorhex); // gets tokenId
         if (_ownerOf(tokenId) == address(0)) revert InvalidTokenId(); // DNE
         tokenName = _getName(tokenId);
     }
 
     // DONE: consider declaring & using named returns, then not explicitly returning
-    function _getName(
-        uint tokenId
-    ) internal view returns (string memory tokenName) {
+    function _getName(uint tokenId) internal view returns (bytes32 tokenName) {
         tokenName = _names[tokenId]; // gets token's name
     }
 
@@ -269,20 +264,17 @@ contract PeachV14 is
     /// @dev Validates colorhex, then passes to a private function to actually do it.
     /// @param colorhex Color's 6-digit hexadecimal representation.
     /// @param newName Color's new name.
-    function modName(
-        string calldata colorhex,
-        string calldata newName
-    ) external {
+    function modName(string calldata colorhex, bytes32 newName) external {
         uint tokenId = aGetId(colorhex); // gets tokenId
-        if (bytes(newName).length > 32) revert InvalidTokenName();
+        if (newName.length > 32) revert InvalidTokenName();
         _modName(tokenId, newName);
     }
 
     function _modName(
         uint tokenId,
-        string memory newName
+        bytes32 newName
     ) internal onlyTokenOwner(tokenId) {
-        string memory oldName = _getName(tokenId);
+        bytes32 oldName = _getName(tokenId);
         _names[tokenId] = newName; // rename token (first ensures token is owned, which also ensures that it exists)
         emit Rename(oldName, newName, tokenId);
     }
@@ -375,7 +367,7 @@ contract PeachV14 is
     ) public view override returns (string memory tokenUri) {
         if (tokenId > 16777215) revert InvalidTokenId();
 
-        string memory name = _getName(tokenId);
+        bytes32 name = _getName(tokenId);
         string memory colorhex = getColorhex(tokenId);
 
         // Pack SVG parts directly into bytes
